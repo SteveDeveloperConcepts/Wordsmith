@@ -82,6 +82,24 @@ const SINGULAR_VERB: Record<string, string> = {
   "haven't": "hasn't",
 };
 
+/** Common verbs and their third-person singular forms, for "it make" → "it makes". */
+const THIRD_PERSON: Record<string, string> = {
+  make: 'makes', take: 'takes', want: 'wants', need: 'needs', go: 'goes', say: 'says', get: 'gets',
+  give: 'gives', know: 'knows', think: 'thinks', come: 'comes', look: 'looks', use: 'uses', find: 'finds',
+  work: 'works', seem: 'seems', feel: 'feels', become: 'becomes', keep: 'keeps', begin: 'begins',
+  show: 'shows', help: 'helps', run: 'runs', move: 'moves', live: 'lives', believe: 'believes',
+  bring: 'brings', happen: 'happens', write: 'writes', provide: 'provides', lose: 'loses', pay: 'pays',
+  include: 'includes', continue: 'continues', learn: 'learns', change: 'changes', lead: 'leads',
+  understand: 'understands', follow: 'follows', stop: 'stops', create: 'creates', speak: 'speaks',
+  allow: 'allows', add: 'adds', spend: 'spends', grow: 'grows', open: 'opens', walk: 'walks', win: 'wins',
+  offer: 'offers', remember: 'remembers', love: 'loves', consider: 'considers', appear: 'appears',
+  buy: 'buys', wait: 'waits', send: 'sends', expect: 'expects', build: 'builds', stay: 'stays',
+  reach: 'reaches', remain: 'remains', suggest: 'suggests', require: 'requires', decide: 'decides',
+  mean: 'means', depend: 'depends', sound: 'sounds', matter: 'matters', exist: 'exists',
+  contain: 'contains', support: 'supports', cause: 'causes', start: 'starts', end: 'ends', try: 'tries',
+  like: 'likes', hate: 'hates', call: 'calls', ask: 'asks', tell: 'tells', play: 'plays', turn: 'turns',
+};
+
 const BE_AUX = new Set([
   'are', 'were', 'is', 'was', "aren't", "weren't", "isn't", "wasn't", 'will', 'would', 'can', 'could',
   'should', 'might', 'may', 'must', 'be', 'been', 'being',
@@ -307,6 +325,24 @@ const RULES: GrammarRule[] = [
         to,
         options: [m[2].toLowerCase() === 'was' ? 'were' : "weren't"],
         message: `The verb must agree with its subject. With “${m[1].toLowerCase()},” use “were.”`,
+      };
+    },
+  },
+  {
+    id: 'ws/third-person-verb',
+    title: 'Change the verb form',
+    re: new RegExp(`\\b(he|she|it) (${Object.keys(THIRD_PERSON).join('|')})\\b`, 'dgi'),
+    match(m, ctx) {
+      // "Does it make sense?", "Let it go", and "I suggest that he go" are all fine:
+      // only a pronoun that opens its clause is the subject of the verb that follows.
+      if (!clauseInitial(ctx.text, m.index, ['that'])) return null;
+      const [from, to] = range(m, 2);
+      const verb = m[2].toLowerCase();
+      return {
+        from,
+        to,
+        options: [THIRD_PERSON[verb]],
+        message: `With “${m[1].toLowerCase()},” the verb takes its “-s” form: “${THIRD_PERSON[verb]}.”`,
       };
     },
   },

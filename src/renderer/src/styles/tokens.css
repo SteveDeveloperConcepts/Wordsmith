@@ -1,0 +1,126 @@
+/* Design tokens. Light is the default; dark overrides follow. */
+:root {
+  color-scheme: light;
+
+  --font-ui: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-serif: 'Source Serif 4 Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+
+  /* Surfaces: warm paper tones */
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface-2: #faf9f6;
+  --surface-3: #efede8;
+  --border: #e6e3dc;
+  --border-strong: #d3cfc5;
+
+  --text: #1b1d21;
+  --text-2: #555a63;
+  --text-3: #8a8f98;
+
+  --primary: #1b1d21;
+  --primary-hover: #34383f;
+  --on-primary: #ffffff;
+  --focus: #3b6cf6;
+  --brand: #ee9b1c;
+
+  /* The four suggestion categories */
+  --correctness: #df3f45;
+  --correctness-soft: rgba(223, 63, 69, 0.13);
+  --clarity: #2a78ee;
+  --clarity-soft: rgba(42, 120, 238, 0.13);
+  --engagement: #189258;
+  --engagement-soft: rgba(24, 146, 88, 0.14);
+  --delivery: #8250ea;
+  --delivery-soft: rgba(130, 80, 234, 0.13);
+
+  --good: #189258;
+  --warn: #d7930d;
+  --bad: #df3f45;
+  --warn-soft: rgba(215, 147, 13, 0.14);
+
+  --shadow-1: 0 1px 2px rgba(27, 29, 33, 0.06), 0 1px 1px rgba(27, 29, 33, 0.04);
+  --shadow-2: 0 12px 32px rgba(27, 29, 33, 0.14), 0 2px 8px rgba(27, 29, 33, 0.08);
+  --overlay: rgba(27, 29, 33, 0.38);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #131518;
+  --surface: #1a1d21;
+  --surface-2: #1f2328;
+  --surface-3: #282d34;
+  --border: #2b3037;
+  --border-strong: #3a4049;
+
+  --text: #e9ebee;
+  --text-2: #a7adb7;
+  --text-3: #747b86;
+
+  --primary: #e9ebee;
+  --primary-hover: #ffffff;
+  --on-primary: #131518;
+  --focus: #7da2ff;
+  --brand: #f5b041;
+
+  --correctness: #ff6b70;
+  --correctness-soft: rgba(255, 107, 112, 0.18);
+  --clarity: #62a4ff;
+  --clarity-soft: rgba(98, 164, 255, 0.18);
+  --engagement: #3ecf8e;
+  --engagement-soft: rgba(62, 207, 142, 0.17);
+  --delivery: #b08cff;
+  --delivery-soft: rgba(176, 140, 255, 0.19);
+
+  --good: #3ecf8e;
+  --warn: #f0b429;
+  --bad: #ff6b70;
+  --warn-soft: rgba(240, 180, 41, 0.16);
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 14px 36px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --overlay: rgba(0, 0, 0, 0.55);
+}
+
+/* Each category element exposes its color as --c / --c-soft. */
+.ws-correctness,
+.dot--correctness,
+.card--correctness,
+.fix--correctness,
+.filter--correctness,
+.popover--correctness {
+  --c: var(--correctness);
+  --c-soft: var(--correctness-soft);
+}
+.ws-clarity,
+.dot--clarity,
+.card--clarity,
+.fix--clarity,
+.filter--clarity,
+.popover--clarity {
+  --c: var(--clarity);
+  --c-soft: var(--clarity-soft);
+}
+.ws-engagement,
+.dot--engagement,
+.card--engagement,
+.fix--engagement,
+.filter--engagement,
+.popover--engagement {
+  --c: var(--engagement);
+  --c-soft: var(--engagement-soft);
+}
+.ws-delivery,
+.dot--delivery,
+.card--delivery,
+.fix--delivery,
+.filter--delivery,
+.popover--delivery {
+  --c: var(--delivery);
+  --c-soft: var(--delivery-soft);
+}

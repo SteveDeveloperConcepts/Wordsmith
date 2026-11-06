@@ -1,0 +1,324 @@
+/* The writing surface: page, prose, issue underlines, and the hover card. */
+
+.page-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.page {
+  --editor-size: 18px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 44px 56px 30vh;
+}
+
+.page--serif {
+  --editor-font: var(--font-serif);
+}
+
+.page--sans {
+  --editor-font: var(--font-ui);
+}
+
+.title-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--editor-font);
+  font-size: calc(var(--editor-size) * 1.75);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.title-input::placeholder {
+  color: var(--text-3);
+}
+
+.ws-prose {
+  min-height: 40vh;
+  outline: none;
+  font-family: var(--editor-font);
+  font-size: var(--editor-size);
+  line-height: 1.7;
+  color: var(--text);
+  word-break: break-word;
+  caret-color: var(--text);
+}
+
+/* Reset block margins with zero specificity, then space blocks with one rule. */
+.ws-prose :where(p, h1, h2, h3, ul, ol, blockquote, pre) {
+  margin: 0;
+}
+
+.ws-prose > * + * {
+  margin-top: 0.85em;
+}
+
+.ws-prose h1,
+.ws-prose h2,
+.ws-prose h3 {
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.ws-prose h1 {
+  font-size: 1.6em;
+}
+
+.ws-prose h2 {
+  font-size: 1.32em;
+}
+
+.ws-prose h3 {
+  font-size: 1.12em;
+}
+
+.ws-prose > h1 + *,
+.ws-prose > h2 + *,
+.ws-prose > h3 + * {
+  margin-top: 0.5em;
+}
+
+.ws-prose > * + h1,
+.ws-prose > * + h2,
+.ws-prose > * + h3 {
+  margin-top: 1.4em;
+}
+
+.ws-prose ul,
+.ws-prose ol {
+  padding-left: 1.5em;
+}
+
+.ws-prose li + li,
+.ws-prose li > * + * {
+  margin-top: 0.3em;
+}
+
+.ws-prose blockquote {
+  padding-left: 1em;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-2);
+}
+
+.ws-prose code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--surface-3);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.ws-prose pre {
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: var(--surface-3);
+  overflow-x: auto;
+  font-size: 0.82em;
+  line-height: 1.55;
+}
+
+.ws-prose pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.ws-prose a {
+  color: var(--clarity);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: text;
+}
+
+.ws-prose hr {
+  height: 1px;
+  margin: 1.4em 0;
+  border: 0;
+  background: var(--border-strong);
+}
+
+/* Placeholder shown in an empty document */
+.ws-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* ---------- Issue underlines ---------- */
+
+.ws-issue {
+  border-radius: 2px;
+  background-image: linear-gradient(var(--c), var(--c));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 2px;
+  padding-bottom: 1px;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: background-color 0.12s;
+}
+
+.ws-issue:hover,
+.ws-issue-active {
+  background-color: var(--c-soft);
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* A whole flagged sentence gets a lighter, dotted line so word-level marks inside it still stand out. */
+.ws-issue.ws-sentence {
+  background-image: linear-gradient(90deg, var(--c) 0 55%, transparent 55% 100%);
+  background-repeat: repeat-x;
+  background-size: 7px 1.5px;
+  cursor: pointer;
+}
+
+.ws-issue.ws-sentence:hover {
+  background-color: transparent;
+}
+
+.ws-issue-active.ws-issue-active {
+  background-color: var(--c-soft);
+}
+
+/* ---------- Hover card ---------- */
+
+.popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 328px;
+  max-width: calc(100vw - 24px);
+  padding: 12px 14px 10px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--c);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  font-family: var(--font-ui);
+}
+
+/* ---------- Issue detail (shared by the hover card and the panel) ---------- */
+
+.issue__type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.issue__title {
+  margin-top: 4px;
+  font-size: 14.5px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.issue__change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 10px;
+}
+
+.issue__old {
+  max-width: 100%;
+  color: var(--text-2);
+  font-size: 13.5px;
+  text-decoration: line-through;
+  text-decoration-color: var(--c);
+  text-decoration-thickness: 1.5px;
+  overflow-wrap: anywhere;
+}
+
+.issue__arrow {
+  flex: none;
+  color: var(--text-3);
+}
+
+.issue__fixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fix {
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid var(--c);
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--c);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: anywhere;
+  transition:
+    background-color 0.12s,
+    color 0.12s;
+}
+
+.fix--primary {
+  background: var(--c);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .fix--primary {
+  color: #101114;
+}
+
+.fix:hover {
+  filter: brightness(0.94);
+  background: var(--c);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .fix:hover {
+  color: #101114;
+  filter: brightness(1.08);
+}
+
+.issue__quote {
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--c);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.issue__message {
+  margin-top: 10px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.issue__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 10px -7px 0;
+}
