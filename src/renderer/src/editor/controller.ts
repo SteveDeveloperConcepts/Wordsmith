@@ -27,6 +27,10 @@ function recount(issues: Issue[]): AnalysisResult['counts'] {
   return { total: issues.length, byCategory, byType };
 }
 
+/** The first words of a document, for its entry in the list. */
+const previewOf = (doc: PMNode): string =>
+  doc.textBetween(0, Math.min(doc.content.size, 600), ' ', ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+
 interface Snapshot {
   doc: PMNode;
   blocks: DocBlock[];
@@ -166,15 +170,19 @@ export class AnalysisController {
     const session = useSession.getState();
     session.setResult(held ? { ...snapshot.result, issues, counts: recount(issues) } : snapshot.result);
     setActiveIssue(this.editor.view, useSession.getState().activeIssue);
-    useLibrary.getState().setSummary({ issues: issues.length, score: snapshot.result.score });
+    useLibrary.getState().setSummary({
+      issues: issues.length,
+      score: snapshot.result.score,
+      preview: previewOf(snapshot.doc),
+      words: snapshot.result.stats.words,
+    });
   }
 
   private save(): void {
     if (this.editor.isDestroyed) return;
     const doc = this.editor.state.doc;
-    const preview = doc.textBetween(0, Math.min(doc.content.size, 600), ' ', ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
     const words = this.snapshot?.doc === doc ? this.snapshot.result.stats.words : countWords(doc.textBetween(0, doc.content.size, ' ', ' '));
-    useLibrary.getState().saveContent(this.editor.getJSON(), { preview, words });
+    useLibrary.getState().saveContent(this.editor.getJSON(), { preview: previewOf(doc), words });
   }
 
   private readonly onUpdate = (): void => {

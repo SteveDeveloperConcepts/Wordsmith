@@ -1,10 +1,11 @@
 /**
  * A tiny JSON settings file in the user-data folder for things the main process
- * owns: window placement, the encrypted API key, and the quick-check toggle.
+ * owns: window placement, the encrypted API key, and the Check Anywhere settings.
  */
 import { app } from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type { AnywhereSettings } from '@shared/api';
 
 export interface WindowState {
   x?: number;
@@ -18,7 +19,9 @@ interface Data {
   window?: WindowState;
   /** API key encrypted with safeStorage, base64-encoded. */
   aiKey?: string;
-  quickCheck?: boolean;
+  anywhere?: AnywhereSettings;
+  /** The writer has been told the app keeps running in the tray. */
+  trayExplained?: boolean;
   lastDirectory?: string;
 }
 

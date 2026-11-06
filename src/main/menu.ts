@@ -6,9 +6,9 @@ const REPOSITORY = 'https://github.com/SteveDeveloperConcepts/Wordsmith';
 interface MenuHandlers {
   /** Forward an action to the app UI. */
   send(action: MenuAction): void;
-  quickCheck(): void;
-  /** The quick-check accelerator, when the global shortcut is active. */
-  quickCheckShortcut: string | null;
+  checkAnywhere(): void;
+  /** The Check Anywhere accelerator, when the global shortcut is active. */
+  anywhereShortcut: string | null;
 }
 
 export function buildMenu(handlers: MenuHandlers): Menu {
@@ -119,11 +119,11 @@ export function buildMenu(handlers: MenuHandlers): Menu {
       submenu: [
         { label: 'Set Goals…', accelerator: 'CmdOrCtrl+G', click: action('goals') },
         {
-          label: 'Check Clipboard Text',
+          label: 'Check Text in Another App',
           // Shown for reference; the global shortcut itself is registered separately.
-          accelerator: handlers.quickCheckShortcut ?? undefined,
+          accelerator: handlers.anywhereShortcut ?? undefined,
           registerAccelerator: false,
-          click: () => handlers.quickCheck(),
+          click: () => handlers.checkAnywhere(),
         },
       ],
     },

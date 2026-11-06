@@ -10,31 +10,15 @@ import { EditorPane } from './editor/EditorPane';
 import { Toolbar } from './editor/Toolbar';
 import { LibrarySidebar } from './library/LibrarySidebar';
 import { formatDuration, formatNumber } from './lib/format';
-import { desktop } from './platform';
+import { useTheme } from './lib/useTheme';
 import { useLibrary } from './state/library';
 import { useSession } from './state/session';
-import { resolveTheme, useSettings } from './state/settings';
+import { useSettings } from './state/settings';
 
 /** Below this width the sidebar floats over the workspace instead of squeezing the page. */
 const SIDEBAR_OVERLAY_QUERY = '(max-width: 1120px)';
 
 const ASSISTANT_TABS: TabDefinition[] = [{ id: 'insights', label: 'Insights', render: () => <InsightsTab /> }];
-
-/** Applies the chosen theme to the document, following the system setting when asked to. */
-function useTheme(): void {
-  const theme = useSettings((s) => s.theme);
-  useEffect(() => {
-    const apply = () => {
-      document.documentElement.dataset.theme = resolveTheme(theme);
-    };
-    apply();
-    void desktop?.setTheme(theme);
-    if (theme !== 'system') return;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    media.addEventListener('change', apply);
-    return () => media.removeEventListener('change', apply);
-  }, [theme]);
-}
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);

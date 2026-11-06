@@ -3,7 +3,7 @@
  * It exposes a small, explicit API; the page never sees `ipcRenderer` itself.
  */
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
-import { IPC, type AiEvent, type DesktopBridge, type MenuAction, type PickedFile } from '@shared/api';
+import { IPC, type AiEvent, type DesktopBridge, type MenuAction, type PickedFile, type QuickCapture } from '@shared/api';
 
 function subscribe<T>(channel: string) {
   return (listener: (payload: T) => void) => {
@@ -28,7 +28,17 @@ const bridge: DesktopBridge = {
   writeClipboard: (text) => ipcRenderer.invoke(IPC.writeClipboard, text),
   openExternal: (url) => ipcRenderer.invoke(IPC.openExternal, url),
   setTheme: (theme) => ipcRenderer.invoke(IPC.setTheme, theme),
-  setQuickCheck: (enabled) => ipcRenderer.invoke(IPC.setQuickCheck, enabled),
+
+  anywhereStatus: () => ipcRenderer.invoke(IPC.anywhereStatus),
+  setAnywhere: (patch) => ipcRenderer.invoke(IPC.setAnywhere, patch),
+  requestAppControl: () => ipcRenderer.invoke(IPC.requestAppControl),
+
+  quickReady: () => ipcRenderer.send(IPC.quickReady),
+  quickReplace: (result) => ipcRenderer.invoke(IPC.quickReplace, result),
+  quickCheckAll: () => ipcRenderer.invoke(IPC.quickCheckAll),
+  quickUseClipboard: () => ipcRenderer.invoke(IPC.quickUseClipboard),
+  quickClose: () => ipcRenderer.invoke(IPC.quickClose),
+  quickOpenInApp: (text) => ipcRenderer.invoke(IPC.quickOpenInApp, text),
 
   aiHasKey: () => ipcRenderer.invoke(IPC.aiHasKey),
   aiSetKey: (key) => ipcRenderer.invoke(IPC.aiSetKey, key),
@@ -38,7 +48,8 @@ const bridge: DesktopBridge = {
 
   onAiEvent: subscribe<AiEvent>(IPC.aiEvent),
   onMenu: subscribe<MenuAction>(IPC.menu),
-  onQuickCheck: subscribe<string>(IPC.quickCheck),
+  onOpenText: subscribe<string>(IPC.openText),
+  onQuickCapture: subscribe<QuickCapture>(IPC.quickCapture),
   onOpenFiles: subscribe<PickedFile[]>(IPC.openFiles),
 };
 

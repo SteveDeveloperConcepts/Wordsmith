@@ -26,14 +26,17 @@ import { basename, dirname, extname, join, normalize, sep } from 'node:path';
 import type { AiRequest } from '@shared/ai-types';
 import {
   IPC,
+  type AnywhereSettings,
   type AppInfo,
   type MenuAction,
   type PickedFile,
+  type QuickResult,
   type SaveFileRequest,
   type SaveResult,
   type ThemeChoice,
 } from '@shared/api';
 import * as ai from './ai';
+import { CheckAnywhere } from './anywhere';
 import { buildMenu } from './menu';
 import * as store from './store';
 
@@ -41,8 +44,11 @@ const SCHEME = 'app';
 const HOST = 'wordsmith';
 const DEV_URL = app.isPackaged ? undefined : process.env['ELECTRON_RENDERER_URL'];
 const RENDERER_ROOT = join(__dirname, '../renderer');
-const QUICK_CHECK_ACCELERATOR = 'Alt+Shift+W';
+const PRELOAD = join(__dirname, '../preload/index.js');
 const IMPORT_EXTENSIONS = ['docx', 'txt', 'md', 'markdown', 'html', 'htm'];
+/** Given to the app when it starts at login, when it should wait quietly in the tray. */
+const HIDDEN_FLAG = '--hidden';
+const QUICK_WINDOW_DELAY = 3000;
 
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
@@ -78,7 +84,6 @@ const MIME: Record<string, string> = {
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let rendererReady = false;
-let quickCheckActive = false;
 /** Deliveries that arrived before the UI was listening. */
 const pending: Array<() => void> = [];
 
@@ -112,6 +117,7 @@ function registerAppProtocol(): void {
 }
 
 const appUrl = () => DEV_URL ?? `${SCHEME}://${HOST}/index.html`;
+const quickUrl = () => `${appUrl()}?view=quick`;
 
 /** Only our own page may call the IPC handlers. */
 function trusted(event: IpcMainInvokeEvent): boolean {
@@ -136,6 +142,21 @@ function isSafeExternal(url: string): boolean {
 const resourcePath = (name: string) =>
   app.isPackaged ? join(process.resourcesPath, 'resources', name) : join(__dirname, '../../resources', name);
 
+const windowBackground = () => (nativeTheme.shouldUseDarkColors ? '#14161a' : '#f6f5f1');
+
+/** External links open in the user's browser; app windows never navigate away. */
+function secureWindow(window: BrowserWindow): void {
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternal(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  window.webContents.on('will-navigate', (event, url) => {
+    if (url === window.webContents.getURL()) return;
+    event.preventDefault();
+    if (isSafeExternal(url)) void shell.openExternal(url);
+  });
+}
+
 function createWindow(): BrowserWindow {
   const saved = store.get('window');
   const iconFile = resourcePath('icon.png');
@@ -148,10 +169,10 @@ function createWindow(): BrowserWindow {
     minHeight: 580,
     show: false,
     title: 'Wordsmith',
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#14161a' : '#f6f5f1',
+    backgroundColor: windowBackground(),
     icon: process.platform === 'linux' && existsSync(iconFile) ? iconFile : undefined,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: PRELOAD,
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
@@ -171,26 +192,33 @@ function createWindow(): BrowserWindow {
   };
   window.on('close', remember);
 
-  // External links open in the user's browser; the app window never navigates away.
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    if (isSafeExternal(url)) void shell.openExternal(url);
-    return { action: 'deny' };
-  });
-  window.webContents.on('will-navigate', (event, url) => {
-    if (url === window.webContents.getURL()) return;
-    event.preventDefault();
-    if (isSafeExternal(url)) void shell.openExternal(url);
-  });
+  secureWindow(window);
   window.webContents.on('did-start-loading', () => {
     rendererReady = false;
   });
   window.on('closed', () => {
     mainWindow = null;
     rendererReady = false;
+    afterMainWindowClosed();
   });
 
   void window.loadURL(appUrl());
   return window;
+}
+
+/** With the shortcut in use the app stays in the tray, so that the shortcut keeps working. */
+function afterMainWindowClosed(): void {
+  if (process.platform === 'darwin') return;
+  if (!tray || !anywhere.keepsRunning) {
+    app.quit();
+    return;
+  }
+  if (store.get('trayExplained')) return;
+  store.set('trayExplained', true);
+  tray.displayBalloon({
+    title: 'Wordsmith is still running',
+    content: 'Your shortcut for checking text in other apps keeps working. To quit, right-click this icon.',
+  });
 }
 
 function showWindow(): BrowserWindow {
@@ -209,7 +237,7 @@ function deliver(channel: string, payload: unknown): void {
 }
 
 /* ------------------------------------------------------------------ */
-/* Files from the operating system, and the quick check                */
+/* Files from the operating system                                     */
 /* ------------------------------------------------------------------ */
 
 async function readPicked(paths: string[]): Promise<PickedFile[]> {
@@ -236,55 +264,40 @@ async function openPaths(paths: string[]): Promise<void> {
 /** Paths passed on the command line ("Open with" on Windows and Linux). */
 const pathsFromArgv = (argv: string[]) => argv.slice(1).filter((a) => !a.startsWith('-') && isImportable(a));
 
-async function quickCheckAsync(): Promise<void> {
-  let text = '';
-  try {
-    text = (await clipboard.readText()).trim();
-  } catch (err) {
-    console.error('Could not read the clipboard:', err);
-  }
-  showWindow();
-  deliver(IPC.quickCheck, text);
-}
-
-function quickCheck(): void {
-  void quickCheckAsync();
-}
-
-function setQuickCheck(enabled: boolean): string | null {
-  globalShortcut.unregister(QUICK_CHECK_ACCELERATOR);
-  quickCheckActive = false;
-  if (enabled) {
-    try {
-      quickCheckActive = globalShortcut.register(QUICK_CHECK_ACCELERATOR, quickCheck);
-    } catch {
-      quickCheckActive = false;
-    }
-  }
-  store.set('quickCheck', enabled);
-  refreshMenus();
-  return quickCheckActive ? QUICK_CHECK_ACCELERATOR : null;
-}
+const anywhere = new CheckAnywhere({
+  get url() {
+    return quickUrl();
+  },
+  preload: PRELOAD,
+  backgroundColor: windowBackground,
+  onChange: refreshMenus,
+  openInApp(text) {
+    showWindow();
+    deliver(IPC.openText, text);
+  },
+  secure: secureWindow,
+});
 
 function refreshMenus(): void {
+  const checkAnywhere = () => void anywhere.trigger();
   Menu.setApplicationMenu(
     buildMenu({
       send: (action: MenuAction) => {
         showWindow();
         deliver(IPC.menu, action);
       },
-      quickCheck,
-      quickCheckShortcut: quickCheckActive ? QUICK_CHECK_ACCELERATOR : null,
+      checkAnywhere,
+      anywhereShortcut: anywhere.shortcut,
     }),
   );
   tray?.setContextMenu(
     Menu.buildFromTemplate([
       { label: 'Open Wordsmith', click: () => showWindow() },
       {
-        label: 'Check Clipboard Text',
-        accelerator: quickCheckActive ? QUICK_CHECK_ACCELERATOR : undefined,
+        label: 'Check Text in Another App',
+        accelerator: anywhere.shortcut ?? undefined,
         registerAccelerator: false,
-        click: quickCheck,
+        click: checkAnywhere,
       },
       { type: 'separator' },
       { label: 'Quit Wordsmith', click: () => app.quit() },
@@ -327,11 +340,19 @@ function safeFileName(name: string): string {
   return cleaned.slice(0, 120) || 'Untitled';
 }
 
+/** Keep only the known fields, with the types they should have. */
+function cleanAnywherePatch(patch: Partial<AnywhereSettings>): Partial<AnywhereSettings> {
+  const clean: Partial<AnywhereSettings> = {};
+  if (typeof patch.enabled === 'boolean') clean.enabled = patch.enabled;
+  if (typeof patch.launchAtLogin === 'boolean') clean.launchAtLogin = patch.launchAtLogin;
+  if (typeof patch.shortcut === 'string' && patch.shortcut) clean.shortcut = patch.shortcut;
+  return clean;
+}
+
 function registerIpc(): void {
   handle(IPC.info, (): AppInfo => ({
     platform: process.platform === 'darwin' || process.platform === 'win32' ? process.platform : 'linux',
     version: app.getVersion(),
-    quickCheckShortcut: quickCheckActive ? QUICK_CHECK_ACCELERATOR : null,
   }));
 
   ipcMain.on(IPC.rendererReady, (event) => {
@@ -339,6 +360,8 @@ function registerIpc(): void {
     rendererReady = true;
     for (const run of pending.splice(0)) run();
   });
+
+  ipcMain.on(IPC.quickReady, (event) => anywhere.pageIsReady(event.sender));
 
   handle(IPC.pickFiles, async (): Promise<PickedFile[]> => {
     if (!mainWindow) return [];
@@ -397,8 +420,19 @@ function registerIpc(): void {
   });
   handle(IPC.setTheme, (_event, theme: ThemeChoice) => {
     if (theme === 'system' || theme === 'light' || theme === 'dark') nativeTheme.themeSource = theme;
+    anywhere.themeChanged();
   });
-  handle(IPC.setQuickCheck, (_event, enabled: boolean) => setQuickCheck(Boolean(enabled)));
+
+  handle(IPC.anywhereStatus, () => anywhere.status());
+  handle(IPC.setAnywhere, (_event, patch: Partial<AnywhereSettings>) => anywhere.update(cleanAnywherePatch(patch)));
+  handle(IPC.requestAppControl, () => anywhere.requestAppControl());
+  handle(IPC.quickReplace, (_event, result: QuickResult) =>
+    anywhere.replace({ text: String(result.text), html: typeof result.html === 'string' ? result.html : null }),
+  );
+  handle(IPC.quickCheckAll, () => anywhere.checkAll());
+  handle(IPC.quickUseClipboard, () => anywhere.useClipboard());
+  handle(IPC.quickClose, () => anywhere.hide());
+  handle(IPC.quickOpenInApp, (_event, text: string) => anywhere.openInApp(String(text)));
 
   handle(IPC.aiHasKey, () => ai.hasKey());
   handle(IPC.aiSetKey, (_event, key: string) => ai.setKey(String(key)));
@@ -437,20 +471,21 @@ if (!app.requestSingleInstanceLock()) {
     if (!DEV_URL) registerAppProtocol();
     registerIpc();
     createTray();
-    // Registers the shortcut (on by default) and builds both menus.
-    setQuickCheck(store.get('quickCheck') ?? true);
-    mainWindow = createWindow();
+    refreshMenus();
+    void anywhere.start();
+    if (!process.argv.includes(HIDDEN_FLAG)) mainWindow = createWindow();
     void openPaths(pathsFromArgv(process.argv));
+    // Once the main window has had the first turn, get the quick window ready too.
+    setTimeout(() => anywhere.prepare(), QUICK_WINDOW_DELAY);
 
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();
-      else showWindow();
-    });
+    app.on('activate', () => void showWindow());
   });
 
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
-  });
+  // Closing the main window is handled where it closes. The quick window, hidden
+  // but alive, would otherwise keep this event from ever firing anyway.
+  app.on('window-all-closed', () => undefined);
+
+  app.on('before-quit', () => anywhere.prepareToQuit());
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();

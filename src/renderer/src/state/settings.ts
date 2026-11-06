@@ -29,8 +29,6 @@ export interface SettingsData {
   /** Editor text size in pixels. */
   editorSize: number;
   aiModel: string;
-  /** Desktop only: the global "check clipboard" shortcut. */
-  quickCheck: boolean;
   libraryOpen: boolean;
   assistantOpen: boolean;
   /** Browser build only: the API key lives in this browser's storage. */
@@ -58,7 +56,6 @@ const DEFAULTS: SettingsData = {
   editorFont: 'serif',
   editorSize: 18,
   aiModel: DEFAULT_AI_MODEL,
-  quickCheck: true,
   libraryOpen: true,
   assistantOpen: true,
   webApiKey: '',
@@ -99,6 +96,12 @@ export const useSettings = create<SettingsData & SettingsActions>()(
     },
   ),
 );
+
+// The main window and the quick window share these settings, so that a word added
+// to the dictionary in one takes effect in the other.
+window.addEventListener('storage', (event) => {
+  if (event.key === useSettings.persist.getOptions().name) void useSettings.persist.rehydrate();
+});
 
 /** The engine configuration for a document with the given goals. */
 export function engineSettings(s: SettingsData, goals: Goals): EngineSettings {

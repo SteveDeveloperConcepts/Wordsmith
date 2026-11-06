@@ -13,8 +13,9 @@ const alias = {
 export default defineConfig({
   main: {
     resolve: { alias },
-    // Bundle dependencies into the main-process file so the packaged app ships no node_modules.
-    build: { externalizeDeps: false },
+    // Only "dependencies" stay external. That is koffi, whose native binary must stay
+    // a real file; everything else is a devDependency and gets bundled.
+    build: { externalizeDeps: true },
   },
   preload: {
     resolve: { alias },

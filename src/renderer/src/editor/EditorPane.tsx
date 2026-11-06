@@ -18,10 +18,12 @@ const LEAVE_DELAY = 220;
 interface Props {
   doc: DocRecord;
   onEditor(editor: Editor | null): void;
+  /** No title, for text that is being checked rather than written as a document. */
+  compact?: boolean;
 }
 
 /** The writing surface for one document: title, rich text, underlines, and the hover popover. */
-export function EditorPane({ doc, onEditor }: Props) {
+export function EditorPane({ doc, onEditor, compact = false }: Props) {
   const editorFont = useSettings((s) => s.editorFont);
   const editorSize = useSettings((s) => s.editorSize);
   const rename = useLibrary((s) => s.rename);
@@ -177,18 +179,20 @@ export function EditorPane({ doc, onEditor }: Props) {
         className={`page page--${editorFont}`}
         style={{ ['--editor-size' as string]: `${editorSize}px` }}
       >
-        <input
-          className="title-input"
-          value={title}
-          placeholder="Untitled document"
-          aria-label="Document title"
-          spellCheck={false}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            rename(event.target.value);
-          }}
-          onKeyDown={onTitleKey}
-        />
+        {!compact && (
+          <input
+            className="title-input"
+            value={title}
+            placeholder="Untitled document"
+            aria-label="Document title"
+            spellCheck={false}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              rename(event.target.value);
+            }}
+            onKeyDown={onTitleKey}
+          />
+        )}
         <EditorContent editor={editor} />
       </div>
       {popover && (

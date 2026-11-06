@@ -20,7 +20,7 @@ interface Props {
 }
 
 /** Corrections that are safe to apply in bulk: a definite error with a concrete replacement. */
-const bulkFixable = (issue: Issue) => issue.category === 'correctness' && issue.fixes.length > 0;
+export const bulkFixable = (issue: Issue) => issue.category === 'correctness' && issue.fixes.length > 0;
 
 export function ReviewTab({ renderExtra }: Props) {
   const result = useSession((s) => s.result);

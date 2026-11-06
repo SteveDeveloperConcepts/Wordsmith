@@ -9,13 +9,12 @@ import './styles/assistant.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { QuickApp } from './quick/QuickApp';
 import { resolveTheme, useSettings } from './state/settings';
 
 // Set the theme before the first paint to avoid a flash of the wrong one.
 document.documentElement.dataset.theme = resolveTheme(useSettings.getState().theme);
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const quick = new URLSearchParams(window.location.search).get('view') === 'quick';
+
+createRoot(document.getElementById('root')!).render(<StrictMode>{quick ? <QuickApp /> : <App />}</StrictMode>);

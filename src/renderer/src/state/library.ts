@@ -46,10 +46,13 @@ interface LibraryState {
   init(): Promise<void>;
   open(id: string): Promise<void>;
   create(input?: NewDocument): Promise<string>;
+  /** Hold a document in memory only. For this window's whole life, nothing reaches the library. */
+  openScratch(input: NewDocument): void;
   rename(title: string): void;
   /** Record the latest editor content; written to disk shortly after. */
   saveContent(content: JSONContent, summary: { preview: string; words: number }): void;
-  setSummary(summary: { issues: number; score: number | null }): void;
+  /** Update what the list shows about the open document, without it counting as an edit. */
+  setSummary(summary: Pick<DocMeta, 'issues' | 'score' | 'preview' | 'words'>): void;
   setGoals(goals: Goals): void;
   dismiss(issueId: string): void;
   restoreDismissed(): void;
@@ -123,11 +126,13 @@ function metaOf(doc: DocRecord, extra: Partial<DocMeta> = {}): DocMeta {
 /** Latest content of the open document, kept out of React state so typing does not re-render the app. */
 let draft: JSONContent | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+/** The quick window shares this storage with the main window, and must leave it alone. */
+let scratch = false;
 
 export const useLibrary = create<LibraryState>()((setState, getState) => {
   const persistCurrent = async () => {
     const { current, docs } = getState();
-    if (!current) return;
+    if (!current || scratch) return;
     const meta = docs.find((d) => d.id === current.id);
     const record: DocRecord = {
       ...current,
@@ -212,6 +217,24 @@ export const useLibrary = create<LibraryState>()((setState, getState) => {
       return record.id;
     },
 
+    openScratch(input) {
+      scratch = true;
+      draft = null;
+      const now = Date.now();
+      setState({
+        ready: true,
+        current: {
+          id: newId(),
+          title: input.title ?? '',
+          content: input.content ?? { type: 'doc', content: [{ type: 'paragraph' }] },
+          goals: input.goals ?? useSettings.getState().defaultGoals,
+          dismissed: [],
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    },
+
     rename(title) {
       patchCurrent({ title }, { title });
     },
@@ -230,7 +253,9 @@ export const useLibrary = create<LibraryState>()((setState, getState) => {
       const { current, docs } = getState();
       if (!current) return;
       const entry = docs.find((d) => d.id === current.id);
-      if (!entry || (entry.issues === summary.issues && entry.score === summary.score)) return;
+      if (!entry) return;
+      const changed = (Object.keys(summary) as Array<keyof typeof summary>).some((key) => entry[key] !== summary[key]);
+      if (!changed) return;
       setState({ docs: docs.map((d) => (d.id === current.id ? { ...d, ...summary } : d)) });
       scheduleSave();
     },

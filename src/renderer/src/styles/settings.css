@@ -488,3 +488,14 @@
     background: HighlightText;
   }
 }
+
+/* The button that records a shortcut. */
+.shortcut {
+  min-width: 112px;
+  font-variant-numeric: tabular-nums;
+}
+
+.shortcut.is-recording {
+  border-color: var(--focus);
+  color: var(--text-2);
+}
