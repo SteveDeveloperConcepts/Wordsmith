@@ -25,6 +25,16 @@ const KEY_V = 9;
 /** NSApplicationActivateIgnoringOtherApps. */
 const ACTIVATE_IGNORING_OTHERS = 2;
 
+const TERMINAL_APPS = new Set([
+  'com.apple.Terminal',
+  'com.googlecode.iterm2',
+  'com.mitchellh.ghostty',
+  'dev.warp.Warp-Stable',
+  'io.alacritty',
+  'net.kovidgoyal.kitty',
+  'co.zeit.hyper',
+]);
+
 interface MacSource extends SourceWindow {
   handle: number;
 }
@@ -77,7 +87,12 @@ export function createMacNative(): Native {
     frontmost(): SourceWindow | null {
       const app = frontmostApp();
       if (!app) return null;
-      const source: MacSource = { name: stringOf(sendForObject(app, selector('localizedName'))), handle: pidOf(app) };
+      const bundleId = stringOf(sendForObject(app, selector('bundleIdentifier')));
+      const source: MacSource = {
+        name: stringOf(sendForObject(app, selector('localizedName'))),
+        handle: pidOf(app),
+        terminal: bundleId !== null && TERMINAL_APPS.has(bundleId),
+      };
       return source;
     },
 

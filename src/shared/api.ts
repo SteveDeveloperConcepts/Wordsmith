@@ -57,7 +57,7 @@ export interface QuickResult {
   html: string | null;
 }
 
-export type QuickReplaceResult = { ok: true } | { ok: false; reason: 'window-gone' | 'selection-changed' };
+export type QuickReplaceResult = { ok: true } | { ok: false; reason: 'window-gone' | 'selection-changed' | 'paste-failed' };
 
 export interface PickedFile {
   name: string;

@@ -239,7 +239,7 @@ export class CheckAnywhere {
         return;
       }
       const source = this.native.frontmost();
-      if (!source || this.native.isOwn(source)) {
+      if (!source || source.terminal || this.native.isOwn(source)) {
         await this.presentClipboard('clipboard');
         return;
       }

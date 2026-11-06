@@ -370,11 +370,21 @@ app.whenReady().then(() => {
     return quick;
   };
 
-  const fixAndReplace = async (quick) => {
+  /** Fix everything, press Replace, and wait for the target app to report the change. */
+  const fixAndReplace = async (quick, out, changed) => {
     await quick.click('button:has-text("Fix ")');
     await sleep(500);
     await quick.click('button:has-text("Replace in")');
-    await sleep(1500);
+    const deadline = Date.now() + 6000;
+    while (!changed(readFileSync(out, 'utf8'))) {
+      if (Date.now() > deadline) {
+        const said = await quick.locator('.quick__problem').allTextContents();
+        throw new Error(`nothing changed in the target app. The quick window said: ${said.join(' ') || 'nothing'}`);
+      }
+      await sleep(100);
+    }
+    // The clipboard goes back a moment after the paste.
+    await sleep(800);
   };
 
   await launchQuick();
@@ -394,7 +404,7 @@ app.whenReady().then(() => {
       await sleep(900);
       const quick = await openQuick();
       check((await quick.textContent('.ws-prose')) === select, 'the wrong text arrived');
-      await fixAndReplace(quick);
+      await fixAndReplace(quick, out, (now) => !now.includes('Their'));
       const after = readFileSync(out, 'utf8');
       check(after === 'Keep this line. There is a lot of mistakes in this sentence. Keep this too.', `the app now says: ${after}`);
     } finally {
@@ -418,7 +428,7 @@ app.whenReady().then(() => {
       await waitForFile(out);
       await sleep(1000);
       const quick = await openQuick();
-      await fixAndReplace(quick);
+      await fixAndReplace(quick, out, (now) => !now.includes('mistaks'));
       const after = readFileSync(out, 'utf8').replace(/\s+/g, ' ');
       check(after.includes('<b>a lot</b>'), `bold was lost: ${after}`);
       check(after.includes('<a href="https://example.com/">mistakes</a>'), `the link was lost: ${after}`);

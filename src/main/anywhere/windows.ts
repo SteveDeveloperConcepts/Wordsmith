@@ -21,6 +21,10 @@ const VK_V = 0x56;
 const SW_RESTORE = 9;
 const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 const MAX_PATH = 1024;
+const MAX_CLASS_NAME = 256;
+
+/** The classic console, Windows Terminal, and the terminals of Git for Windows and PuTTY. */
+const TERMINAL_CLASSES = new Set(['ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS', 'mintty', 'PuTTY']);
 
 export function createWindowsNative(): Native {
   const user32 = koffi.load('user32.dll');
@@ -56,6 +60,7 @@ export function createWindowsNative(): Native {
   const IsIconic = user32.func('bool __stdcall IsIconic(void *hwnd)');
   const AttachThreadInput = user32.func('bool __stdcall AttachThreadInput(uint32_t from, uint32_t to, bool attach)');
   const GetWindowThreadProcessId = user32.func('uint32_t __stdcall GetWindowThreadProcessId(void *hwnd, _Out_ uint32_t *pid)');
+  const GetClassNameW = user32.func('int __stdcall GetClassNameW(void *hwnd, _Out_ uint16_t *name, int size)');
   const GetAsyncKeyState = user32.func('int16_t __stdcall GetAsyncKeyState(int key)');
   const GetClipboardSequenceNumber = user32.func('uint32_t __stdcall GetClipboardSequenceNumber()');
   const GetCurrentThreadId = kernel32.func('uint32_t __stdcall GetCurrentThreadId()');
@@ -96,13 +101,23 @@ export function createWindowsNative(): Native {
     }
   }
 
+  function classOf(hwnd: unknown): string {
+    const name = new Uint16Array(MAX_CLASS_NAME);
+    const length = GetClassNameW(hwnd, name, MAX_CLASS_NAME) as number;
+    return String.fromCharCode(...name.subarray(0, length));
+  }
+
   const keyDown = (key: number) => ((GetAsyncKeyState(key) as number) & 0x8000) !== 0;
 
   return {
     frontmost(): SourceWindow | null {
       const handle = GetForegroundWindow();
       if (!handle) return null;
-      return { name: friendlyAppName(programPath(processOf(handle).pid)), handle };
+      return {
+        name: friendlyAppName(programPath(processOf(handle).pid)),
+        handle,
+        terminal: TERMINAL_CLASSES.has(classOf(handle)),
+      };
     },
 
     isFrontmost: (source) => GetForegroundWindow() === source.handle,

@@ -29,8 +29,17 @@ const COPY_SETTLE = 40;
 const FOCUS_TIMEOUT = 800;
 /** Time for keyboard focus to land inside the window, after the window itself is in front. */
 const FOCUS_SETTLE = 80;
+/**
+ * For a moment after a write, the system and any clipboard managers are reading the
+ * clipboard. An app that tries to paste then gets nothing and says nothing, so Ctrl+V
+ * has to wait. Without this, about one paste in three failed in testing.
+ */
+const PASTE_DELAY = 100;
+const PASTE_TRIES = 3;
 /** Apps read the clipboard after they see Ctrl+V, so it must stay put for a moment. */
 const PASTE_SETTLE = 450;
+/** A failed paste leaves the selection in place, and copying it answers quickly. */
+const VERIFY_TIMEOUT = 250;
 const POLL_INTERVAL = 15;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -45,10 +54,14 @@ async function waitFor(condition: () => boolean, timeout: number): Promise<boole
 }
 
 /** Press Ctrl+C and return what the app put on the clipboard, or null if it did not respond. */
-async function pressAndRead<S>(native: Native, clipboard: ClipboardPort<S>): Promise<ClipboardContent | null> {
+async function pressAndRead<S>(
+  native: Native,
+  clipboard: ClipboardPort<S>,
+  timeout = COPY_TIMEOUT,
+): Promise<ClipboardContent | null> {
   const stamp = native.clipboardStamp();
   native.pressCopy();
-  if (!(await waitFor(() => native.clipboardStamp() !== stamp, COPY_TIMEOUT))) return null;
+  if (!(await waitFor(() => native.clipboardStamp() !== stamp, timeout))) return null;
   await sleep(COPY_SETTLE);
   return clipboard.read();
 }
@@ -64,13 +77,14 @@ export type CaptureResult =
 export async function captureSelection<S>(native: Native, clipboard: ClipboardPort<S>): Promise<CaptureResult> {
   if (!(await waitFor(native.modifiersUp, MODIFIER_TIMEOUT))) return { kind: 'keys-held' };
   const saved = await clipboard.save();
+  const stamp = native.clipboardStamp();
   try {
     const content = await pressAndRead(native, clipboard);
     if (!content) return { kind: 'nothing' };
     if (!content.text.trim()) return { kind: 'nothing' };
     return { kind: 'text', content };
   } finally {
-    await clipboard.restore(saved);
+    if (native.clipboardStamp() !== stamp) await clipboard.restore(saved);
   }
 }
 
@@ -99,12 +113,44 @@ export type ReplaceFailure =
   /** The app was closed, or would not come forward. */
   | 'window-gone'
   /** The selection is no longer what was checked, so pasting would overwrite the wrong text. */
-  | 'selection-changed';
+  | 'selection-changed'
+  /** The app did not take the paste, and the original text is still there. */
+  | 'paste-failed';
 
 export type ReplaceResult = { ok: true } | { ok: false; reason: ReplaceFailure };
 
-/** Line endings differ between what apps copy, and do not matter for this comparison. */
+/** Apps differ in the whitespace they copy, and that does not make it different text. */
 const comparable = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+/** Stricter, because a fix may change nothing but whitespace. */
+const sameText = (a: string, b: string) => a.replace(/\r\n?/g, '\n').trimEnd() === b.replace(/\r\n?/g, '\n').trimEnd();
+
+type PasteResult = 'pasted' | 'failed' | 'clipboard-taken';
+
+/**
+ * Paste, and make sure it happened. No app reports a failed paste, but a paste that
+ * worked replaces the selection, so copying again either gets nothing or gets
+ * something new. Getting the original back means it is still sitting there selected.
+ */
+async function pasteOver<S>(
+  native: Native,
+  clipboard: ClipboardPort<S>,
+  original: string,
+  replacement: ClipboardContent,
+): Promise<PasteResult> {
+  for (let attempt = 1; attempt <= PASTE_TRIES; attempt++) {
+    await clipboard.write(replacement);
+    await sleep(PASTE_DELAY * attempt);
+    const stamp = native.clipboardStamp();
+    native.pressPaste();
+    await sleep(PASTE_SETTLE);
+    // Only the writer could have changed the clipboard just now, and that wins.
+    if (native.clipboardStamp() !== stamp) return 'clipboard-taken';
+    const after = await pressAndRead(native, clipboard, VERIFY_TIMEOUT);
+    if (!after || !sameText(after.text, original)) return 'pasted';
+  }
+  return 'failed';
+}
 
 /**
  * Paste corrected text over the original selection. Before pasting it copies the
@@ -128,11 +174,13 @@ export async function replaceSelection<S>(
     return { ok: false, reason: 'selection-changed' };
   }
 
-  await clipboard.write(replacement);
-  const stamp = native.clipboardStamp();
-  native.pressPaste();
-  await sleep(PASTE_SETTLE);
-  // If the stamp moved, the writer copied something else in the meantime, and that wins.
-  if (native.clipboardStamp() === stamp) await clipboard.restore(saved);
-  return { ok: true };
+  // Nothing changed, and a paste of the same text could not be told from a failed one.
+  if (sameText(replacement.text, original)) {
+    await clipboard.restore(saved);
+    return { ok: true };
+  }
+
+  const outcome = await pasteOver(native, clipboard, original, replacement);
+  if (outcome !== 'clipboard-taken') await clipboard.restore(saved);
+  return outcome === 'failed' ? { ok: false, reason: 'paste-failed' } : { ok: true };
 }

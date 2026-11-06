@@ -115,8 +115,9 @@ function Empty() {
   );
 }
 
-const FAILURE: Record<'window-gone' | 'selection-changed', (app: string) => string> = {
+const FAILURE: Record<'window-gone' | 'selection-changed' | 'paste-failed', (app: string) => string> = {
   'window-gone': (app) => `Could not get back to ${app}. Copy the corrected text and paste it yourself.`,
+  'paste-failed': (app) => `${app} did not take the corrected text. Copy it and paste it yourself.`,
   'selection-changed': (app) =>
     `The selection in ${app} changed, so nothing was replaced. Select the same text again and choose Replace, or copy the corrected text.`,
 };

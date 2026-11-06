@@ -11,7 +11,9 @@ import { friendlyAppName, type Native, type SourceWindow } from '../../src/main/
 const source: SourceWindow = { name: 'Outlook', handle: 1 };
 
 /** A pretend desktop: one app with a selection, and a real-acting clipboard. */
-function setup(options: { selection?: string | null; focusWorks?: boolean; keysHeld?: boolean } = {}) {
+function setup(
+  options: { selection?: string | null; focusWorks?: boolean; keysHeld?: boolean; pastesIgnored?: number } = {},
+) {
   const log: string[] = [];
   const state = {
     selection: options.selection === undefined ? 'Their is a mistake.' : options.selection,
@@ -19,6 +21,8 @@ function setup(options: { selection?: string | null; focusWorks?: boolean; keysH
     stamp: 100,
     pasted: null as ClipboardContent | null,
     front: true,
+    /** How many times the app will miss a paste, as it does if the clipboard is busy. */
+    pastesIgnored: options.pastesIgnored ?? 0,
   };
 
   const clipboard: ClipboardPort<ClipboardContent> = {
@@ -59,7 +63,13 @@ function setup(options: { selection?: string | null; focusWorks?: boolean; keysH
     },
     pressPaste: () => {
       log.push('paste');
+      if (state.pastesIgnored > 0) {
+        state.pastesIgnored--;
+        return;
+      }
       state.pasted = state.clipboard;
+      // A real paste replaces the selection, which leaves nothing selected.
+      state.selection = null;
     },
     pressSelectAll: () => {
       log.push('select-all');
@@ -123,7 +133,38 @@ describe('replaceSelection', () => {
     expect(result).toEqual({ ok: true });
     expect(state.pasted).toEqual(fixed);
     expect(state.clipboard.text).toBe('what the writer copied earlier');
-    expect(log).toEqual(['focus', 'save', 'copy', 'write', 'paste', 'restore']);
+    expect(log).toEqual(['focus', 'save', 'copy', 'write', 'paste', 'copy', 'restore']);
+  });
+
+  it('tries again when the app misses the paste, as it does if the clipboard is busy', async () => {
+    const { native, clipboard, state, log } = setup({ pastesIgnored: 1 });
+    const result = await replaceSelection(native, clipboard, source, 'Their is a mistake.', fixed);
+    expect(result).toEqual({ ok: true });
+    expect(state.pasted).toEqual(fixed);
+    expect(log.filter((step) => step === 'paste')).toHaveLength(2);
+    expect(state.clipboard.text).toBe('what the writer copied earlier');
+  });
+
+  it('says so if the app never takes the paste, rather than claiming success', async () => {
+    const { native, clipboard, state } = setup({ pastesIgnored: 99 });
+    const result = await replaceSelection(native, clipboard, source, 'Their is a mistake.', fixed);
+    expect(result).toEqual({ ok: false, reason: 'paste-failed' });
+    expect(state.pasted).toBeNull();
+    expect(state.clipboard.text).toBe('what the writer copied earlier');
+  });
+
+  it('pastes nothing when the text did not change', async () => {
+    const { native, clipboard, log } = setup();
+    const same = { text: 'Their is a mistake.', html: null };
+    expect(await replaceSelection(native, clipboard, source, 'Their is a mistake.', same)).toEqual({ ok: true });
+    expect(log).not.toContain('paste');
+  });
+
+  it('treats a fix that only changes spacing as a change', async () => {
+    const { native, clipboard, state } = setup({ selection: 'Too  many spaces.' });
+    const spaced = { text: 'Too many spaces.', html: null };
+    expect(await replaceSelection(native, clipboard, source, 'Too  many spaces.', spaced)).toEqual({ ok: true });
+    expect(state.pasted).toEqual(spaced);
   });
 
   it('accepts a selection that differs only in line endings', async () => {

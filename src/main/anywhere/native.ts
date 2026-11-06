@@ -8,6 +8,8 @@ export interface SourceWindow {
   name: string | null;
   /** Identifies the window to the platform layer: a window handle or a process id. */
   handle: unknown;
+  /** In a terminal Ctrl+C stops the running program, so no keys may be pressed there. */
+  terminal?: boolean;
 }
 
 export interface Native {
