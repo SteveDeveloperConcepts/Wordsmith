@@ -1,0 +1,69 @@
+appId: com.stevedeveloperconcepts.wordsmith
+productName: Wordsmith
+copyright: Copyright © 2026 Steve Vaubell
+
+directories:
+  output: release
+  buildResources: resources
+
+# The bundled app is all that ships. Vite has already folded in every devDependency.
+files:
+  - out/**/*
+  - "!**/*.map"
+
+# koffi loads its native binary from a real file, which cannot live inside an asar archive.
+asarUnpack:
+  - "**/node_modules/@koromix/**"
+
+extraResources:
+  - from: resources
+    to: resources
+    filter:
+      - tray*.png
+
+# koffi ships prebuilt binaries, so there is nothing to compile.
+npmRebuild: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: Wordsmith-Setup-${version}-${arch}.${ext}
+
+mac:
+  category: public.app-category.productivity
+  icon: resources/icon.icns
+  # Each architecture is built on a machine of that architecture, because npm installs
+  # only the matching koffi binary.
+  target:
+    - target: dmg
+  # Without a Developer ID, sign ad hoc: Apple Silicon refuses to run unsigned code at all.
+  identity: "-"
+  hardenedRuntime: false
+  # Word and text editors keep their place as the default app; Wordsmith only appears in Open With.
+  fileAssociations:
+    - ext: docx
+      name: Word document
+      role: Editor
+      rank: Alternate
+    - ext: md
+      name: Markdown document
+      role: Editor
+      rank: Alternate
+    - ext: txt
+      name: Text document
+      role: Editor
+      rank: Alternate
+  extendInfo:
+    NSAccessibilityUsageDescription: Wordsmith copies the text you select in other apps, and pastes corrections back, when you press its shortcut.
+
+dmg:
+  artifactName: Wordsmith-${version}-${arch}.${ext}

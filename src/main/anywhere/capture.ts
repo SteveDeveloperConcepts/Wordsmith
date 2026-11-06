@@ -75,7 +75,9 @@ export async function captureSelection<S>(native: Native, clipboard: ClipboardPo
 }
 
 async function bringForward(native: Native, source: SourceWindow): Promise<boolean> {
-  if (!native.focus(source)) return false;
+  // A refusal does not matter if the app is in front anyway, as on a Mac, where the
+  // floating panel never took the app's place.
+  if (!native.focus(source) && !native.isFrontmost(source)) return false;
   if (!(await waitFor(() => native.isFrontmost(source), FOCUS_TIMEOUT))) return false;
   await sleep(FOCUS_SETTLE);
   return true;

@@ -149,10 +149,17 @@ describe('replaceSelection', () => {
 
   it('gives up if the window cannot be reached', async () => {
     const { native, clipboard, state, log } = setup({ focusWorks: false });
+    state.front = false;
     const result = await replaceSelection(native, clipboard, source, 'Their is a mistake.', fixed);
     expect(result).toEqual({ ok: false, reason: 'window-gone' });
     expect(log).toEqual(['focus']);
     expect(state.pasted).toBeNull();
+  });
+
+  it('carries on if the system refuses focus but the window is in front anyway', async () => {
+    const { native, clipboard, state } = setup({ focusWorks: false });
+    expect(await replaceSelection(native, clipboard, source, 'Their is a mistake.', fixed)).toEqual({ ok: true });
+    expect(state.pasted).toEqual(fixed);
   });
 
   it('leaves anything the writer copied during the paste alone', async () => {
