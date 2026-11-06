@@ -1,0 +1,52 @@
+name: Release
+
+# Pushing a tag such as v0.1.0 builds every installer and attaches them to a draft
+# GitHub release, ready to review and publish by hand.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: |
+            release/*.exe
+            release/*.dmg
+
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:extension
+      - run: cd dist-extension && zip -r ../wordsmith-browser-extension.zip .
+      - uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: wordsmith-browser-extension.zip

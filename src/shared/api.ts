@@ -85,6 +85,8 @@ export type MenuAction =
   | 'export-html'
   | 'export-md'
   | 'export-txt'
+  | 'open-in-word'
+  | 'email-document'
   | 'print'
   | 'settings'
   | 'goals'
@@ -112,6 +114,12 @@ export interface DesktopBridge {
   /** Render the current window with the print stylesheet and save it as a PDF. */
   savePdf(defaultName: string): Promise<SaveResult>;
   print(): Promise<void>;
+  /**
+   * Save a .docx or .eml to a temporary folder and open it in the app the system
+   * uses for that type, such as Word or Outlook. Resolves with an error message, or
+   * an empty string if it opened.
+   */
+  openInDefaultApp(name: string, data: Uint8Array): Promise<string>;
 
   readClipboard(): Promise<string>;
   writeClipboard(text: string): Promise<void>;
@@ -162,6 +170,7 @@ export const IPC = {
   pickFiles: 'files:pick',
   saveFile: 'files:save',
   savePdf: 'files:save-pdf',
+  openInDefaultApp: 'files:open-in-default-app',
   print: 'app:print',
   readClipboard: 'clipboard:read',
   writeClipboard: 'clipboard:write',

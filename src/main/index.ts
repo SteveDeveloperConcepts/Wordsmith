@@ -21,7 +21,7 @@ import {
   type IpcMainInvokeEvent,
 } from 'electron';
 import { existsSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, normalize, sep } from 'node:path';
 import type { AiRequest } from '@shared/ai-types';
 import {
@@ -46,6 +46,8 @@ const DEV_URL = app.isPackaged ? undefined : process.env['ELECTRON_RENDERER_URL'
 const RENDERER_ROOT = join(__dirname, '../renderer');
 const PRELOAD = join(__dirname, '../preload/index.js');
 const IMPORT_EXTENSIONS = ['docx', 'txt', 'md', 'markdown', 'html', 'htm'];
+/** Only documents with no way to run code on opening may be handed to the system. */
+const OPENABLE_EXTENSIONS = ['.docx', '.eml'];
 /** Given to the app when it starts at login, when it should wait quietly in the tray. */
 const HIDDEN_FLAG = '--hidden';
 const QUICK_WINDOW_DELAY = 3000;
@@ -411,6 +413,16 @@ function registerIpc(): void {
 
   handle(IPC.print, () => {
     mainWindow?.webContents.print({ printBackground: false });
+  });
+
+  handle(IPC.openInDefaultApp, async (_event, name: string, data: Uint8Array): Promise<string> => {
+    const fileName = safeFileName(String(name));
+    if (!OPENABLE_EXTENSIONS.includes(extname(fileName).toLowerCase())) return 'That file type cannot be opened from Wordsmith.';
+    // A folder of its own each time, because the last copy may still be open in Word.
+    const folder = await mkdtemp(join(app.getPath('temp'), 'wordsmith-'));
+    const file = join(folder, fileName);
+    await writeFile(file, data);
+    return shell.openPath(file);
   });
 
   handle(IPC.readClipboard, () => clipboard.readText());

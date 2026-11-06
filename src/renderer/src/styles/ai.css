@@ -1,0 +1,417 @@
+/* The AI tab, the rewrite control on suggestion cards, and the floating selection menu. */
+
+.ai {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- No key yet ---------- */
+
+.ai-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.ai-setup__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ai-setup__title svg {
+  flex: none;
+  color: var(--text-2);
+}
+
+.ai-setup .btn {
+  margin-top: 4px;
+}
+
+/* ---------- Sections ---------- */
+
+.ai-section {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.ai-section__heading {
+  font: inherit;
+}
+
+.ai-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px 0 14px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: none;
+  text-align: left;
+}
+
+.ai-section__toggle:hover {
+  background: var(--surface-2);
+}
+
+.ai-section__toggle:focus-visible {
+  outline-offset: -2px;
+}
+
+.ai-section__toggle > svg {
+  flex: none;
+  color: var(--text-2);
+}
+
+.ai-section__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ai-section__state {
+  flex: none;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.ai-section__toggle[aria-expanded='true'] .ai-section__chevron {
+  transform: rotate(90deg);
+}
+
+.ai-section__chevron {
+  transition: transform 0.12s;
+}
+
+.ai-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 14px 14px;
+}
+
+/* ---------- Controls ---------- */
+
+.ai-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ai-fields:disabled .input,
+.ai-fields:disabled .textarea {
+  background: var(--surface-2);
+}
+
+.ai-fields:disabled .chip {
+  background: none;
+  color: var(--text-2);
+  opacity: 0.5;
+}
+
+.ai-hint {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.ai-selection {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ai-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-form__row {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-label {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ---------- Replies ---------- */
+
+.ai-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-result__heading {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ai-preview {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.ai-plain {
+  white-space: pre-wrap;
+}
+
+.ai-prose > * + * {
+  margin-top: 0.7em;
+}
+
+.ai-prose :where(h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre) {
+  margin-bottom: 0;
+}
+
+.ai-prose :where(h1, h2, h3, h4, h5, h6) {
+  font-size: 1.08em;
+  font-weight: 650;
+}
+
+.ai-prose :where(ul, ol) {
+  padding-left: 1.3em;
+}
+
+.ai-prose blockquote {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0.8em;
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-2);
+}
+
+.ai-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+.ai-prose pre {
+  overflow-x: auto;
+}
+
+.ai-reactions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-progress__spinner {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-width: 2px;
+}
+
+.ai-progress__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-notice__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ai-privacy {
+  padding: 4px 4px 0;
+  color: var(--text-2);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ---------- Proofreading cards ---------- */
+
+.ai-card__new {
+  max-width: 100%;
+  color: var(--c);
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.ai-card__note {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  background: var(--warn-soft);
+  font-size: 12.5px;
+}
+
+.ai-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* ---------- Rewriting one sentence from a suggestion card ---------- */
+
+.ai-issue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-issue .ai-card__note {
+  margin-top: 0;
+}
+
+.ai-issue__start {
+  margin-top: 10px;
+}
+
+/* ---------- Floating selection menu ---------- */
+
+/* Makes the page the menu's containing block, so the menu scrolls with the text and is clipped by the scroller. */
+.page {
+  position: relative;
+}
+
+.ai-bubble {
+  z-index: 30;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  font-family: var(--font-ui);
+}
+
+.ai-bubble__bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+}
+
+.ai-bubble__icon {
+  flex: none;
+  margin: 0 4px 0 6px;
+  color: var(--text-2);
+}
+
+.ai-bubble__button {
+  height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.ai-bubble__button:hover {
+  background: var(--surface-3);
+}
+
+/* ---------- Highlights in the text ---------- */
+
+.ws-ai-target,
+.ws-ai-reveal {
+  border-radius: 2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* The passage being rewritten. */
+.ws-ai-target {
+  background-color: color-mix(in srgb, var(--focus) 18%, transparent);
+}
+
+/* The text a proofreading suggestion would change. */
+.ws-ai-reveal {
+  background-color: var(--warn-soft);
+  box-shadow: inset 0 -2px 0 var(--warn);
+}
+
+/* High contrast themes drop background colors, which are all that show these highlights. */
+@media (forced-colors: active) {
+  .ws-ai-target,
+  .ws-ai-reveal {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}

@@ -1,0 +1,152 @@
+/*
+ * Printing and PDF export: the title and the text, black on white, and nothing else.
+ * The rest of the app is built around one screen-sized window, so everything that
+ * clips or scrolls has to let go here or only the first page would come out.
+ * The !important flags are there because this sheet's place in the bundle depends on
+ * who imports it first, and it must win against the screen styles either way.
+ */
+@media print {
+  /* This wins over the margins the desktop shell asks for, so it says the same thing they do. */
+  @page {
+    margin: 1in;
+  }
+
+  /* Dark mode swaps these, and a page must not print with light text. */
+  :root,
+  :root[data-theme] {
+    color-scheme: light !important;
+    --bg: #fff !important;
+    --surface: #fff !important;
+    --surface-2: #fff !important;
+    --surface-3: #fff !important;
+    --border: #000 !important;
+    --border-strong: #000 !important;
+    --text: #000 !important;
+    --text-2: #000 !important;
+    --text-3: #000 !important;
+    --clarity: #000 !important;
+  }
+
+  /*
+   * The chrome by name, then anything beside the page by position, so that chrome
+   * added later stays out too. The :has() keeps that from ever hiding the text
+   * itself if the editor ends up inside another element.
+   */
+  .library,
+  .library-slot,
+  .scrim,
+  .topbar,
+  .assistant,
+  .statusbar,
+  .popover,
+  .toast,
+  .dialog,
+  .doc-menu,
+  .link-form,
+  body > :not(:has(.page-scroll)),
+  .app > :not(:has(.page-scroll)),
+  .workspace > :not(.page-scroll, :has(.page-scroll)),
+  .page-scroll > :not(.page) {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #root,
+  .app,
+  .workspace,
+  .page-scroll,
+  .page,
+  .ProseMirror,
+  .ws-prose {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Its bottom padding is scroll room for writing, which would print as a blank page. */
+  .page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* An <input> cannot wrap, so exporters.ts copies the title here for a long one to fit. */
+  .page[data-print-title]::before {
+    content: attr(data-print-title);
+    display: block;
+    margin: 0 0 18px;
+    color: #000;
+    font-family: var(--editor-font);
+    font-size: calc(var(--editor-size) * 1.75);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  .page[data-print-title] .title-input {
+    display: none !important;
+  }
+
+  .title-input {
+    color: #000 !important;
+  }
+
+  .title-input::placeholder {
+    color: transparent !important;
+  }
+
+  .ws-prose p.is-editor-empty:first-child::before {
+    content: none !important;
+  }
+
+  .ws-issue,
+  .ws-issue-active,
+  .ws-sentence {
+    padding-bottom: 0 !important;
+    background: none !important;
+    cursor: auto;
+  }
+
+  .ws-prose * {
+    color: #000 !important;
+  }
+
+  .ws-prose code,
+  .ws-prose pre {
+    background: none !important;
+  }
+
+  /* A long line of code would otherwise be cut off at the edge of the paper. */
+  .ws-prose pre {
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    border: 1px solid #000;
+  }
+
+  /* The screen draws this rule as a background, and printing leaves backgrounds out. */
+  .ws-prose hr {
+    height: 0 !important;
+    border: 0 !important;
+    border-top: 1px solid #000 !important;
+    background: none !important;
+  }
+
+  .ws-prose h1,
+  .ws-prose h2,
+  .ws-prose h3 {
+    break-after: avoid;
+  }
+
+  .ws-prose p,
+  .ws-prose li {
+    orphans: 2;
+    widows: 2;
+  }
+}

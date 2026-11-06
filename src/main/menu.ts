@@ -74,7 +74,9 @@ export function buildMenu(handlers: MenuHandlers): Menu {
             { label: 'Plain Text (.txt)…', click: action('export-txt') },
           ],
         },
-        { label: 'Copy Document Text', accelerator: 'CmdOrCtrl+Shift+C', click: action('copy-document') },
+        { label: 'Open in Word', click: action('open-in-word') },
+        { label: 'Start an Email', click: action('email-document') },
+        { label: 'Copy with Formatting', accelerator: 'CmdOrCtrl+Shift+C', click: action('copy-document') },
         { type: 'separator' },
         { label: 'Print…', accelerator: 'CmdOrCtrl+P', click: action('print') },
         ...(mac

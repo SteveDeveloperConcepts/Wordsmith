@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Ignored page title</title>
+  <style>p { color: red; } .secret { display: none; }</style>
+  <script>document.title = 'stolen';</script>
+</head>
+<body>
+  <h1 onclick="alert(1)">Quarterly review</h1>
+  <p>The <strong>bold</strong> plan, the <em>italic</em> risk, and the <u>underlined</u> date.</p>
+  <script>window.leaked = 'script text';</script>
+  <style>.more { color: blue; }</style>
+  <h4>A deep heading</h4>
+  <p><a href="https://example.com/report?a=1&amp;b=2">The report</a> and <a href="javascript:alert(1)">a bad link</a>.</p>
+  <p><img src="chart.png" alt="A chart"></p>
+  <ul>
+    <li>First
+      <ul><li>Nested</li></ul>
+    </li>
+    <li>Second</li>
+  </ul>
+  <table>
+    <caption>Targets</caption>
+    <thead><tr><th>Region</th><th>Goal</th></tr></thead>
+    <tbody>
+      <tr><td>North</td><td>12</td></tr>
+      <tr><td></td><td><ul><li>In a cell</li></ul></td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

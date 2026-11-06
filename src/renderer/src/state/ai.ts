@@ -231,9 +231,8 @@ function writeRewrite(tr: Transaction, range: Range, output: string): void {
 }
 
 /** Apply an AI edit as one undo step of its own and hand the keyboard back to the document. */
-function commit(editor: Editor, tr: Transaction): void {
-  const done: TrackerMeta = { target: null, reveal: null };
-  editor.view.dispatch(closeHistory(tr).setMeta(trackerKey, done).scrollIntoView());
+function commit(editor: Editor, tr: Transaction, meta: TrackerMeta = {}): void {
+  editor.view.dispatch(closeHistory(tr).setMeta(trackerKey, { reveal: null, ...meta }).scrollIntoView());
   editor.view.focus();
 }
 
@@ -536,7 +535,7 @@ export const useAi = create<AiState>()((set, get) => {
       }
       const tr = editor.state.tr;
       writeRewrite(tr, range, get().rewrite.output);
-      commit(editor, tr);
+      commit(editor, tr, { target: null });
       set({ rewrite: IDLE_REWRITE });
       useSession.getState().notify(`Replaced. Press ${MOD}+Z to undo.`);
     },
@@ -551,7 +550,7 @@ export const useAi = create<AiState>()((set, get) => {
       const steps = tr.steps.length;
       tr.insert($anchor.parent.isTextblock ? $anchor.after() : anchor, paragraphNodes(schema, get().rewrite.output));
       selectionToInsertionEnd(tr, steps, -1);
-      commit(editor, tr);
+      commit(editor, tr, { target: null });
       set({ rewrite: IDLE_REWRITE });
     },
 

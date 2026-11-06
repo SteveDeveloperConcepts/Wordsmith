@@ -22,6 +22,7 @@ const bridge: DesktopBridge = {
   pickFiles: () => ipcRenderer.invoke(IPC.pickFiles),
   saveFile: (request) => ipcRenderer.invoke(IPC.saveFile, request),
   savePdf: (defaultName) => ipcRenderer.invoke(IPC.savePdf, defaultName),
+  openInDefaultApp: (name, data) => ipcRenderer.invoke(IPC.openInDefaultApp, name, data),
   print: () => ipcRenderer.invoke(IPC.print),
 
   readClipboard: () => ipcRenderer.invoke(IPC.readClipboard),

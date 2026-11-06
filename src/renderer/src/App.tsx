@@ -1,8 +1,11 @@
 import type { Editor } from '@tiptap/react';
 import { PanelLeft, PanelRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AiTab } from './assistant/AiTab';
 import { AssistantPanel, type TabDefinition } from './assistant/AssistantPanel';
 import { InsightsTab } from './assistant/InsightsTab';
+import { IssueRewrite } from './assistant/IssueRewrite';
+import { importFiles, listenForCommands, runCommand } from './commands';
 import { GoalsButton, GoalsDialog } from './dialogs/GoalsDialog';
 import { SettingsDialog } from './dialogs/SettingsDialog';
 import { analysisClient } from './editor/analysisClient';
@@ -11,14 +14,67 @@ import { Toolbar } from './editor/Toolbar';
 import { LibrarySidebar } from './library/LibrarySidebar';
 import { formatDuration, formatNumber } from './lib/format';
 import { useTheme } from './lib/useTheme';
+import { readFiles } from './platform';
 import { useLibrary } from './state/library';
 import { useSession } from './state/session';
 import { useSettings } from './state/settings';
+import { TopbarActions } from './TopbarActions';
 
 /** Below this width the sidebar floats over the workspace instead of squeezing the page. */
 const SIDEBAR_OVERLAY_QUERY = '(max-width: 1120px)';
 
-const ASSISTANT_TABS: TabDefinition[] = [{ id: 'insights', label: 'Insights', render: () => <InsightsTab /> }];
+const ASSISTANT_TABS: TabDefinition[] = [
+  { id: 'insights', label: 'Insights', render: () => <InsightsTab /> },
+  { id: 'ai', label: 'AI', render: () => <AiTab /> },
+];
+
+const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
+
+/** Dropped files become documents. Without this, a drop would navigate the window away. */
+function useFileDrop(): boolean {
+  const [dragging, setDragging] = useState(false);
+  useEffect(() => {
+    // Enter and leave fire for every element crossed, so only the balance says when it has really left.
+    let depth = 0;
+    const onEnter = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      depth++;
+      setDragging(true);
+    };
+    const onLeave = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragging(false);
+    };
+    const onOver = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    };
+    const onDrop = (event: DragEvent) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      depth = 0;
+      setDragging(false);
+      const files = Array.from(event.dataTransfer?.files ?? []);
+      void readFiles(files).then(importFiles);
+    };
+    window.addEventListener('dragenter', onEnter);
+    window.addEventListener('dragleave', onLeave);
+    window.addEventListener('dragover', onOver);
+    // Capturing, so the drop never reaches the editor, which would paste a file name.
+    window.addEventListener('drop', onDrop, true);
+    return () => {
+      window.removeEventListener('dragenter', onEnter);
+      window.removeEventListener('dragleave', onLeave);
+      window.removeEventListener('dragover', onOver);
+      window.removeEventListener('drop', onDrop, true);
+    };
+  }, []);
+  return dragging;
+}
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
@@ -108,6 +164,7 @@ export function App() {
   const update = useSettings((s) => s.update);
   const [editor, setEditor] = useState<Editor | null>(null);
   const overlay = useMediaQuery(SIDEBAR_OVERLAY_QUERY);
+  const dragging = useFileDrop();
 
   useEffect(() => {
     void useLibrary.getState().init();
@@ -115,6 +172,11 @@ export function App() {
     useSession.getState().setEngine(analysisClient.status);
     return analysisClient.onStatus((status) => useSession.getState().setEngine(status));
   }, []);
+
+  // Files and menu actions can only be acted on once the library has loaded.
+  useEffect(() => {
+    if (ready) return listenForCommands();
+  }, [ready]);
 
   // Make sure the last edits reach disk if the window closes.
   useEffect(() => {
@@ -127,11 +189,14 @@ export function App() {
     };
   }, []);
 
-  // A sidebar floating over the page has done its job once a document is chosen.
+  // A sidebar floating over the page has done its job once a document is chosen. This
+  // follows the document only: printing briefly narrows the page, which is no reason to close it.
   const docId = doc?.id;
+  const overlaid = useRef(overlay);
+  overlaid.current = overlay;
   useEffect(() => {
-    if (overlay && docId) useSettings.getState().update({ libraryOpen: false });
-  }, [overlay, docId]);
+    if (overlaid.current && docId) useSettings.getState().update({ libraryOpen: false });
+  }, [docId]);
 
   if (!ready || !doc) {
     return (
@@ -149,7 +214,7 @@ export function App() {
             <div className="scrim" aria-hidden onClick={() => update({ libraryOpen: false })} />
           )}
           <div className={overlay ? 'library-slot library-slot--overlay' : 'library-slot'}>
-            <LibrarySidebar onImport={() => undefined} />
+            <LibrarySidebar onImport={() => runCommand('import')} />
           </div>
         </>
       )}
@@ -169,6 +234,7 @@ export function App() {
           </div>
           <div className="topbar__group topbar__group--grow">{editor && <Toolbar editor={editor} />}</div>
           <div className="topbar__group">
+            <TopbarActions />
             <button
               type="button"
               className={`icon-btn${assistantOpen ? ' is-active' : ''}`}
@@ -184,10 +250,17 @@ export function App() {
         <EditorPane key={doc.id} doc={doc} onEditor={setEditor} />
         <StatusBar />
       </main>
-      {assistantOpen && <AssistantPanel extraTabs={ASSISTANT_TABS} headerAction={<GoalsButton />} />}
+      {assistantOpen && (
+        <AssistantPanel
+          extraTabs={ASSISTANT_TABS}
+          headerAction={<GoalsButton />}
+          renderIssueExtra={(issue) => <IssueRewrite issue={issue} />}
+        />
+      )}
       <GoalsDialog />
       <SettingsDialog />
       <Toast />
+      {dragging && <div className="drop-hint">Drop files to open them as documents</div>}
     </div>
   );
 }

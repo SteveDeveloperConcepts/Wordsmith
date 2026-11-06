@@ -62,8 +62,6 @@ mac:
       name: Text document
       role: Editor
       rank: Alternate
-  extendInfo:
-    NSAccessibilityUsageDescription: Wordsmith copies the text you select in other apps, and pastes corrections back, when you press its shortcut.
 
 dmg:
   artifactName: Wordsmith-${version}-${arch}.${ext}

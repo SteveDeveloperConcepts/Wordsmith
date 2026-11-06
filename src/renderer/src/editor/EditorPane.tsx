@@ -1,13 +1,14 @@
 import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { documentExtensions } from '../lib/schema';
 import { useLibrary, type DocRecord } from '../state/library';
 import { useSession } from '../state/session';
 import { useSettings } from '../state/settings';
 import { AnalysisController } from './controller';
 import { IssuePopover, type PopoverTarget } from './IssuePopover';
 import { IssuesExtension, locateIssue } from './issues';
+import { SelectionMenu } from './SelectionMenu';
 import { useIssueActions } from './useIssueActions';
 
 /** How long the pointer rests on an underline before its suggestion appears. */
@@ -35,10 +36,7 @@ export function EditorPane({ doc, onEditor, compact = false }: Props) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer nofollow' } },
-      }),
+      ...documentExtensions,
       Placeholder.configure({ placeholder: 'Start writing, or paste your text here…' }),
       IssuesExtension,
     ],
@@ -194,6 +192,7 @@ export function EditorPane({ doc, onEditor, compact = false }: Props) {
           />
         )}
         <EditorContent editor={editor} />
+        {editor && !compact && <SelectionMenu editor={editor} />}
       </div>
       {popover && (
         <IssuePopover target={popover} actions={actions} onMouseEnter={clearTimer} onMouseLeave={scheduleClose} />
