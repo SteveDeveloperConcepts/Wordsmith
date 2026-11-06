@@ -611,7 +611,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
 ];
 
 function SettingsPanels({ onClose }: { onClose(): void }) {
-  const [activeId, setActiveId] = useState(SETTINGS_SECTIONS[0].id);
+  const [activeId, setActiveId] = useState(() => useSession.getState().settingsSection ?? SETTINGS_SECTIONS[0].id);
   const nav = useRef<HTMLDivElement>(null);
   const baseId = useId();
   const active = SETTINGS_SECTIONS.find((section) => section.id === activeId) ?? SETTINGS_SECTIONS[0];

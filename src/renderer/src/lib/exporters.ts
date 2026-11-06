@@ -153,7 +153,7 @@ function blockText(node: JSONContent): string {
 const blocksText = (nodes: JSONContent[] = [], separator = '\n\n'): string => nodes.map(blockText).join(separator);
 
 export function documentToText(title: string, content: JSONContent): string {
-  return `${blocksText(withTitle(title, content).content)}\n`;
+  return `${blocksText(withTitle(title, content).content).trimEnd()}\n`;
 }
 
 // ---------- Word ----------
@@ -187,7 +187,11 @@ interface Place {
   quoted: boolean;
 }
 
-/** Characters that docx writes as they are but that XML does not allow, so Word would call the file corrupt. */
+/**
+ * docx removes the control characters XML forbids, but not the two noncharacters,
+ * and Word refuses to open a file with either in it. Half a surrogate pair would
+ * only come out as a replacement character, which nobody wants in their document.
+ */
 const forXml = (text: string): string => text.replace(/[\p{Cs}\ufffe\uffff]/gu, '');
 
 /**

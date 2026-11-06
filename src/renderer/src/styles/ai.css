@@ -243,6 +243,12 @@
   font-size: 0.88em;
 }
 
+/* Links here show what will be inserted, and do not go anywhere. */
+.ai-prose a {
+  color: var(--clarity);
+  cursor: default;
+}
+
 .ai-prose pre {
   overflow-x: auto;
 }
@@ -280,7 +286,7 @@
 .ai-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ai-notice__body {
@@ -337,7 +343,7 @@
   margin-top: 0;
 }
 
-.ai-issue__start {
+.ai-issue__offer {
   margin-top: 10px;
 }
 
@@ -348,12 +354,13 @@
   position: relative;
 }
 
+/* A light shadow: the menu sits right over the text it acts on, and a deep one would dim it. */
 .ai-bubble {
   z-index: 30;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-m);
   background: var(--surface);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-1);
   font-family: var(--font-ui);
 }
 
@@ -404,6 +411,18 @@
 .ws-ai-reveal {
   background-color: var(--warn-soft);
   box-shadow: inset 0 -2px 0 var(--warn);
+}
+
+@media print {
+  .ai-bubble {
+    display: none !important;
+  }
+
+  .ws-ai-target,
+  .ws-ai-reveal {
+    background: none !important;
+    box-shadow: none !important;
+  }
 }
 
 /* High contrast themes drop background colors, which are all that show these highlights. */

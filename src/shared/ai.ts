@@ -198,14 +198,14 @@ export async function runAi(
 
   try {
     if (request.kind === 'proofread') {
-      const stream = client.beta.messages.stream(
-        { ...base, output_config: { effort: prompt.effort, format: betaZodOutputFormat(ProofreadSchema) } },
-        { signal },
-      );
+      // Only the schema goes to the API. Given the parser too, the SDK reads each text block
+      // as it ends, and throws a raw JSON error for a reply that was cut off or refused, or
+      // that a fallback to another model split in two.
+      const { parse, ...format } = betaZodOutputFormat(ProofreadSchema);
+      const stream = client.beta.messages.stream({ ...base, output_config: { effort: prompt.effort, format } }, { signal });
       const message = await stream.finalMessage();
       checkStop(message.stop_reason);
-      const parsed = message.parsed_output;
-      if (!parsed) throw new AiError('unknown', 'The AI reply could not be read. Try again.');
+      const parsed = readReply(() => parse(replyText(message.content)));
       const count = request.paragraphs.length;
       return {
         kind: 'proofread',
@@ -219,11 +219,22 @@ export async function runAi(
     stream.on('text', (delta) => onText(delta));
     const message = await stream.finalMessage();
     checkStop(message.stop_reason);
-    let text = '';
-    for (const block of message.content) if (block.type === 'text') text += block.text;
-    return { kind: 'text', text: text.trim() };
+    return { kind: 'text', text: replyText(message.content).trim() };
   } catch (err) {
     throw toAiError(err);
+  }
+}
+
+/** Everything the model wrote. A fallback to another model leaves a reply in several text blocks. */
+function replyText(content: Array<{ type: string; text?: string }>): string {
+  return content.map((block) => (block.type === 'text' ? block.text : '')).join('');
+}
+
+function readReply<T>(read: () => T): T {
+  try {
+    return read();
+  } catch {
+    throw new AiError('unknown', 'The AI reply could not be read. Try again.');
   }
 }
 

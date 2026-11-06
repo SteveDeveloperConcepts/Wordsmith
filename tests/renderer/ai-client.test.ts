@@ -1,11 +1,14 @@
 // @vitest-environment happy-dom
+import { Editor } from '@tiptap/core';
+import StarterKit from '@tiptap/starter-kit';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AiErrorInfo, AiRequest, AiResult } from '@shared/ai-types';
+import type { AiErrorCode, AiErrorInfo, AiRequest, AiResult } from '@shared/ai-types';
 import type { AiEvent, DesktopBridge } from '@shared/api';
 import { DEFAULT_GOALS } from '@engine/types';
 import { runAi, useAiReady } from '@renderer/ai/client';
+import { explainAiError, markdownToHtml, reactionItems, selectedPassage, useAi } from '@renderer/state/ai';
 import { useSession } from '@renderer/state/session';
 import { useSettings } from '@renderer/state/settings';
 
@@ -289,5 +292,168 @@ describe('useAiReady on the desktop', () => {
     await mount();
     expect(ready).toBe(true);
     await act(async () => answer(true));
+  });
+});
+
+describe('explaining a failure', () => {
+  it.each<[AiErrorCode, 'settings' | 'retry' | null]>([
+    ['no-key', 'settings'],
+    ['auth', 'settings'],
+    ['bad-request', 'settings'],
+    ['rate-limit', 'retry'],
+    ['overloaded', 'retry'],
+    ['network', 'retry'],
+    ['declined', 'retry'],
+    ['unknown', 'retry'],
+    ['truncated', null],
+    ['too-long', null],
+  ])('suggests the next step after "%s"', (code, next) => {
+    expect(explainAiError({ code, message: 'Something happened.' })).toMatchObject({ message: 'Something happened.', next });
+  });
+
+  it('keeps a raw service error away from the writer, but not what the service said', () => {
+    const body = JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'model: "x" not found' } });
+    expect(explainAiError({ code: 'bad-request', message: `The AI service rejected the request: 400 ${body}` })).toEqual({
+      message: 'The AI service could not complete this request.',
+      detail: 'model: "x" not found',
+      next: 'settings',
+    });
+  });
+});
+
+describe('reading a reply', () => {
+  it('splits a reaction into its points, whatever the bullets', () => {
+    expect(reactionItems('- One\n* Two\n• Three\n1. Four\n2) Five')).toEqual(['One', 'Two', 'Three', 'Four', 'Five']);
+  });
+
+  it('joins a point that wraps onto a second line', () => {
+    expect(reactionItems('- One\n  and more\n\n- Two')).toEqual(['One and more', 'Two']);
+  });
+
+  it('copes with a reaction that is still arriving', () => {
+    expect(reactionItems('')).toEqual([]);
+    expect(reactionItems('Before any bullet')).toEqual(['Before any bullet']);
+    expect(reactionItems('- One\n- Tw')).toEqual(['One', 'Tw']);
+  });
+
+  it('shows raw HTML as text, so it cannot run', () => {
+    const html = markdownToHtml('<script>alert(1)</script>\n\nHi <img src=x onerror=alert(1)> there');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('never fetches an image named in a reply', () => {
+    const html = markdownToHtml('![a chart](https://example.com/spy.png)');
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('example.com');
+    expect(html).toContain('a chart');
+  });
+});
+
+describe('rewriting in the document', () => {
+  let editor: Editor;
+
+  /** "The second paragraph." */
+  const SECOND = { from: 23, to: 44 };
+
+  const text = () => editor.getText({ blockSeparator: '|' });
+
+  function rewriteSecondParagraph() {
+    editor.commands.setTextSelection(SECOND);
+    useAi.getState().runRewrite('Shorten it.', 'Shorten it');
+  }
+
+  async function finishWith(reply: string) {
+    emit({ id: lastId(), type: 'done', result: { kind: 'text', text: reply } });
+    await settled();
+  }
+
+  beforeEach(() => {
+    editor = new Editor({
+      extensions: [StarterKit.configure({ trailingNode: false })],
+      content: '<p>The first paragraph.</p><p>The second paragraph.</p><h2>A heading</h2>',
+    });
+    useSession.setState({ editor });
+  });
+
+  afterEach(() => {
+    useSession.setState({ editor: null });
+    editor.destroy();
+  });
+
+  it('sends the passage, and shows the reply as it arrives', async () => {
+    rewriteSecondParagraph();
+    expect(useAi.getState().rewrite).toMatchObject({ status: 'running', source: 'The second paragraph.', label: 'Shorten it' });
+    expect(bridge.aiStart.mock.calls.at(-1)?.[2]).toMatchObject({ kind: 'rewrite', text: 'The second paragraph.' });
+
+    emit({ id: lastId(), type: 'text', delta: 'The sec' });
+    expect(useAi.getState().rewrite.output).toBe('The sec');
+    await finishWith('The second.');
+    expect(useAi.getState().rewrite).toMatchObject({ status: 'done', output: 'The second.' });
+  });
+
+  it('replaces the passage and leaves the result selected', async () => {
+    rewriteSecondParagraph();
+    await finishWith('Second.');
+    useAi.getState().replaceRewrite();
+    expect(text()).toBe('The first paragraph.|Second.|A heading');
+    expect(selectedPassage(editor.state)).toBe('Second.');
+    expect(useAi.getState().rewrite.status).toBe('idle');
+  });
+
+  it('refuses to replace a passage that has changed', async () => {
+    rewriteSecondParagraph();
+    await finishWith('Second.');
+    editor.commands.insertContentAt(SECOND.from + 4, 'very ');
+    useAi.getState().replaceRewrite();
+    expect(useAi.getState().rewrite.note).toContain('has changed');
+    expect(text()).toContain('The very second paragraph.');
+  });
+
+  it('follows a passage that moves', async () => {
+    rewriteSecondParagraph();
+    await finishWith('Second.');
+    editor.commands.insertContentAt(1, 'Well, ');
+    useAi.getState().replaceRewrite();
+    expect(text()).toBe('Well, The first paragraph.|Second.|A heading');
+  });
+
+  it('keeps a waiting rewrite when a draft goes in elsewhere', async () => {
+    rewriteSecondParagraph();
+    await finishWith('Second.');
+
+    editor.commands.setTextSelection(1);
+    useAi.getState().setDraft({ composePrompt: 'An opening.' });
+    useAi.getState().runCompose();
+    await finishWith('An opening.');
+    useAi.getState().insertComposed();
+
+    useAi.getState().replaceRewrite();
+    expect(useAi.getState().rewrite.note).toBeNull();
+    expect(text()).toBe('An opening.The first paragraph.|Second.|A heading');
+  });
+
+  it('keeps a waiting rewrite when a suggestion goes in elsewhere', async () => {
+    rewriteSecondParagraph();
+    await finishWith('Second.');
+
+    useAi.getState().runProofread();
+    const suggestion = { paragraph: 0, quote: 'first', replacement: 'opening', category: 'clarity', title: 'T', explanation: 'E' } as const;
+    emit({ id: lastId(), type: 'done', result: { kind: 'proofread', suggestions: [suggestion] } });
+    await settled();
+    useAi.getState().applySuggestion('0');
+
+    useAi.getState().replaceRewrite();
+    expect(useAi.getState().rewrite.note).toBeNull();
+    expect(text()).toBe('The opening paragraph.|Second.|A heading');
+  });
+
+  it('keeps a heading a heading', async () => {
+    editor.commands.setTextSelection({ from: 46, to: 55 });
+    useAi.getState().runRewrite('Shorten it.', 'Shorten it');
+    await finishWith('Heading');
+    useAi.getState().replaceRewrite();
+    expect(editor.getHTML()).toContain('<h2>Heading</h2>');
   });
 });

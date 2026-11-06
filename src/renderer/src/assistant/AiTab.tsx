@@ -108,12 +108,23 @@ function Section({ id, title, icon, status, doneLabel, children }: SectionProps)
   );
 }
 
-function Progress({ label, onCancel }: { label: string; onCancel(): void }) {
+/**
+ * For a button that takes itself away: without this, the keyboard drops out of the
+ * panel and starts again from the top of the page.
+ */
+function thenFocusSection(action: () => void) {
+  return (event: MouseEvent<HTMLElement>) => {
+    event.currentTarget.closest('.ai-section')?.querySelector<HTMLElement>('.ai-section__toggle')?.focus();
+    action();
+  };
+}
+
+export function Progress({ label, onCancel }: { label: string; onCancel(): void }) {
   return (
     <div className="ai-progress">
       <span className="spinner ai-progress__spinner" aria-hidden />
       <span className="ai-progress__label">{label}</span>
-      <button type="button" className="btn btn--outline btn--small" onClick={onCancel}>
+      <button type="button" className="btn btn--outline btn--small" onClick={thenFocusSection(onCancel)}>
         Cancel
       </button>
     </div>
@@ -139,7 +150,7 @@ export function AiErrorNotice({ error, onRetry }: AiErrorNoticeProps) {
           {detail && <span className="notice__detail"> ({detail})</span>}
         </p>
         {next === 'settings' && (
-          <button type="button" className="btn btn--outline btn--small" onClick={() => openDialog('settings')}>
+          <button type="button" className="btn btn--outline btn--small" onClick={() => openDialog('settings', 'ai')}>
             Open Settings
           </button>
         )}
@@ -167,7 +178,7 @@ interface ReplyProps {
   /** Says what is happening while the reply arrives. */
   progress: string;
   /** Names what the reply is. */
-  heading?: string;
+  heading: string;
   note?: string | null;
   onCancel(): void;
   onRetry(): void;
@@ -181,9 +192,15 @@ interface ReplyProps {
 
 /** A text reply from start to finish: arriving, finished, or failed. */
 function Reply({ run, progress, heading, note, onCancel, onRetry, onDiscard, discardLabel = 'Discard', actions, children }: ReplyProps) {
+  const root = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const { status, output, error } = run;
   const running = status === 'running';
+
+  // A long section can leave the reply, and what to do with it, below the edge of the panel.
+  useEffect(() => {
+    root.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [status]);
 
   // Keep the newest text in view until the reply is complete.
   useEffect(() => {
@@ -193,14 +210,14 @@ function Reply({ run, progress, heading, note, onCancel, onRetry, onDiscard, dis
   if (status === 'idle') return null;
 
   const discard = (
-    <button type="button" className="btn btn--ghost btn--small" onClick={onDiscard}>
+    <button type="button" className="btn btn--ghost btn--small" onClick={thenFocusSection(onDiscard)}>
       {discardLabel}
     </button>
   );
 
   if (status === 'failed') {
     return (
-      <div className="ai-result">
+      <div ref={root} className="ai-result">
         {error && <AiErrorNotice error={error} onRetry={onRetry} />}
         {note && <Note>{note}</Note>}
         <div className="ai-actions">{discard}</div>
@@ -209,10 +226,10 @@ function Reply({ run, progress, heading, note, onCancel, onRetry, onDiscard, dis
   }
 
   return (
-    <div className="ai-result">
-      {heading && <p className="ai-result__heading">{heading}</p>}
+    <div ref={root} className="ai-result">
+      <p className="ai-result__heading">{heading}</p>
       {output && (
-        <div ref={box} className="ai-preview" tabIndex={0} role="group" aria-label={heading ?? 'Reply'}>
+        <div ref={box} className="ai-preview" tabIndex={0} role="group" aria-label={heading}>
           {children}
         </div>
       )}
@@ -383,6 +400,7 @@ function ComposeReply() {
     <Reply
       run={run}
       progress="Writing…"
+      heading="Draft"
       onCancel={() => ai().cancel('compose')}
       onRetry={() => ai().runCompose()}
       onDiscard={() => ai().discardComposed()}
@@ -462,6 +480,7 @@ function ReaderReply() {
     <Reply
       run={run}
       progress="Reading your document…"
+      heading="Reactions"
       onCancel={() => ai().cancel('reader')}
       onRetry={() => ai().runReader()}
       onDiscard={() => ai().clearReader()}
@@ -508,7 +527,11 @@ function Suggestion({ card, onDismiss }: { card: SuggestionCard; onDismiss(): vo
           )}
         </div>
         <p className="issue__message">{card.explanation}</p>
-        {card.note && <p className="ai-card__note">{card.note}</p>}
+        {card.note && (
+          <p className="ai-card__note" role="alert">
+            {card.note}
+          </p>
+        )}
         <div className="ai-card__actions">
           <button
             type="button"
@@ -596,7 +619,7 @@ function KeySetup() {
       </h3>
       <p>Rewriting, drafting, reader reactions, and deep proofreading use Claude, with your own Anthropic API key.</p>
       <p>Checking still works without AI. Spelling, grammar, and style suggestions run on this device.</p>
-      <button type="button" className="btn btn--primary btn--small" onClick={() => openDialog('settings')}>
+      <button type="button" className="btn btn--primary btn--small" onClick={() => openDialog('settings', 'ai')}>
         Open Settings
       </button>
     </div>

@@ -1,13 +1,14 @@
 import { Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { Issue } from '@engine/types';
 import { AiError, type AiErrorInfo } from '@shared/ai-types';
 import { runAi, useAiReady } from '../ai/client';
-import { replaceSentence } from '../editor/issues';
+import { replaceSentence, sentenceText } from '../editor/issues';
 import { MOD } from '../platform';
 import { sentenceRequest } from '../state/ai';
 import { useSession } from '../state/session';
-import { AiErrorNotice } from './AiTab';
+import { AiErrorNotice, Progress } from './AiTab';
 import '../styles/ai.css';
 
 interface Rewrite {
@@ -27,20 +28,29 @@ export function IssueRewrite({ issue }: { issue: Issue }) {
   const ready = useAiReady();
   const [rewrite, setRewrite] = useState(IDLE);
   const controller = useRef<AbortController | null>(null);
+  const sentence = useRef<string | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const offer = useRef<HTMLButtonElement>(null);
 
   // The result only has a place in this card, so closing the card ends the request.
   useEffect(() => () => controller.current?.abort(), []);
+
+  // The card has grown, and what to do next may be below the edge of the panel.
+  useEffect(() => {
+    root.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [rewrite.status]);
 
   if (!ready || !issue.rewriteHint || issue.fixes.length > 0) return null;
 
   const start = () => {
     const { editor } = useSession.getState();
-    const request = editor && sentenceRequest(editor.state, issue);
-    if (!request) {
+    const request = editor ? sentenceRequest(editor.state, issue) : null;
+    if (!editor || !request) {
       setRewrite({ ...IDLE, status: 'failed', note: SENTENCE_CHANGED });
       return;
     }
 
+    sentence.current = sentenceText(editor.state, issue.id);
     controller.current?.abort();
     const { signal } = (controller.current = new AbortController());
     setRewrite({ ...IDLE, status: 'running' });
@@ -64,7 +74,9 @@ export function IssueRewrite({ issue }: { issue: Issue }) {
 
   const discard = () => {
     controller.current?.abort();
-    setRewrite(IDLE);
+    flushSync(() => setRewrite(IDLE));
+    // The button that had the keyboard is gone, so hand it to the one that took its place.
+    offer.current?.focus();
   };
 
   const accept = () => {
@@ -73,7 +85,8 @@ export function IssueRewrite({ issue }: { issue: Issue }) {
     if (!view) return;
     // A sentence stays in its paragraph, however the reply was laid out.
     const text = rewrite.output.replace(/\s*\n\s*/g, ' ');
-    if (!replaceSentence(view, issue.id, text)) {
+    const expected = sentence.current;
+    if (expected === null || !replaceSentence(view, issue.id, expected, text)) {
       setRewrite((r) => ({ ...r, note: SENTENCE_CHANGED }));
       return;
     }
@@ -84,15 +97,17 @@ export function IssueRewrite({ issue }: { issue: Issue }) {
 
   if (rewrite.status === 'idle') {
     return (
-      <button type="button" className="btn btn--outline btn--small ai-issue__start" onClick={start}>
+      <button ref={offer} type="button" className="btn btn--outline btn--small ai-issue__offer" onClick={start}>
         <Sparkles size={14} aria-hidden /> Rewrite with AI
       </button>
     );
   }
 
-  const running = rewrite.status === 'running';
   return (
-    <div className="ai-issue">
+    <div ref={root} className="ai-issue">
+      <p className="ai-sr" role="status">
+        {rewrite.status === 'running' ? 'Rewriting' : rewrite.status === 'done' ? 'Rewrite ready' : ''}
+      </p>
       {rewrite.output && rewrite.status !== 'failed' && (
         <div className="ai-preview" tabIndex={0} role="group" aria-label="Rewritten sentence">
           <p className="ai-plain">{rewrite.output}</p>
@@ -104,17 +119,8 @@ export function IssueRewrite({ issue }: { issue: Issue }) {
           {rewrite.note}
         </p>
       )}
-      <p className="ai-sr" role="status">
-        {running ? 'Rewriting' : rewrite.status === 'done' ? 'Rewrite ready' : ''}
-      </p>
-      {running ? (
-        <div className="ai-progress">
-          <span className="spinner ai-progress__spinner" aria-hidden />
-          <span className="ai-progress__label">Rewriting…</span>
-          <button type="button" className="btn btn--outline btn--small" onClick={discard}>
-            Cancel
-          </button>
-        </div>
+      {rewrite.status === 'running' ? (
+        <Progress label="Rewriting…" onCancel={discard} />
       ) : (
         <div className="ai-actions">
           {rewrite.status === 'done' && (

@@ -32,6 +32,8 @@ interface SessionState {
   type: IssueType | null;
   tab: AssistantTab;
   dialog: DialogName | null;
+  /** The part of Settings to show first. */
+  settingsSection: string | null;
   toast: Toast | null;
   selection: SelectionStats | null;
 
@@ -42,7 +44,7 @@ interface SessionState {
   setActiveIssue(id: string | null): void;
   setFilter(category: Category | 'all', type?: IssueType | null): void;
   setTab(tab: AssistantTab): void;
-  openDialog(dialog: DialogName | null): void;
+  openDialog(dialog: DialogName | null, section?: string): void;
   notify(message: string, kind?: Toast['kind']): void;
   dismissToast(): void;
   setSelection(selection: SelectionStats | null): void;
@@ -60,6 +62,7 @@ export const useSession = create<SessionState>()((set) => ({
   type: null,
   tab: 'review',
   dialog: null,
+  settingsSection: null,
   toast: null,
   selection: null,
 
@@ -75,7 +78,7 @@ export const useSession = create<SessionState>()((set) => ({
   setActiveIssue: (id) => set((s) => (s.activeIssue === id ? s : { activeIssue: id })),
   setFilter: (category, type = null) => set({ category, type }),
   setTab: (tab) => set({ tab }),
-  openDialog: (dialog) => set({ dialog }),
+  openDialog: (dialog, section) => set({ dialog, settingsSection: section ?? null }),
   notify: (message, kind = 'info') => set({ toast: { id: ++toastId, message, kind } }),
   dismissToast: () => set({ toast: null }),
   setSelection: (selection) =>

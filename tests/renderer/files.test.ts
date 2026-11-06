@@ -176,6 +176,17 @@ describe('round trips', () => {
           numbers(item(paragraph(text('Inner one'))), item(paragraph(text('Inner two')))),
         ),
       ),
+      paragraph(text('Between again')),
+      numbers(
+        item(
+          paragraph(text('Lead')),
+          paragraph(text('Follow-up')),
+          { type: 'blockquote', content: [paragraph(text('Quoted in an item'))] },
+          { type: 'codeBlock', attrs: { language: null }, content: [text('code in an item\n  indented')] },
+        ),
+        item(paragraph(text('Next'))),
+      ),
+      { type: 'blockquote', content: [bullets(item(paragraph(text('Listed in a quote'))))] },
     );
     for (const [name, data] of [
       ['Lists.md', documentToMarkdown('Lists', lists)],
@@ -427,6 +438,29 @@ describe('documentToDocx', () => {
     expect(block('inner code')).toContain('w:left="360"');
   });
 
+  it('keeps a list inside a quote indented at every level', async () => {
+    const content = doc({
+      type: 'blockquote',
+      content: [bullets(item(paragraph(text('Outer')), bullets(item(paragraph(text('Inner'))))))],
+    });
+    const files = await parts(await documentToDocx('', content));
+    const numbering = xml(files['word/numbering.xml']);
+    const leftAt = (abstract: Element, level: string) =>
+      Number(
+        Array.from(abstract.getElementsByTagName('w:lvl'))
+          .find((lvl) => lvl.getAttribute('w:ilvl') === level)
+          ?.getElementsByTagName('w:ind')[0]
+          .getAttribute('w:left'),
+      );
+    const ours = Array.from(numbering.getElementsByTagName('w:abstractNum')).filter((abstract) => {
+      const first = Array.from(abstract.getElementsByTagName('w:lvl'))[0];
+      return first?.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') === '•';
+    });
+    expect(ours).toHaveLength(2);
+    expect(leftAt(ours[0], '0')).toBe(720);
+    expect(leftAt(ours[1], '1')).toBe(1080);
+  });
+
   it('writes quotes, rules, line breaks and tabs as Word elements', async () => {
     const content = doc(
       { type: 'blockquote', content: [paragraph(text('Quoted'))] },
@@ -553,12 +587,99 @@ describe('importFile', () => {
     expect(blockTexts(result.content)).toEqual(['Text more']);
   });
 
+  it('leaves no empty line where a linked picture was', async () => {
+    const result = await importFile(picked('i.html', '<p>Before</p><p><a href="https://example.com"><img src="a.png"></a></p><p>After</p>'));
+    expect(blockTexts(result.content)).toEqual(['Before', 'After']);
+  });
+
+  it('keeps the text of a first block that only matches because neither has any letters', async () => {
+    const result = await importFile(picked('---.txt', '***\n\nBody'));
+    expect(blockTexts(result.content)).toEqual(['***', 'Body']);
+  });
+
+  it('removes a first block that repeats the file name, in any format', async () => {
+    expect(blockTexts((await importFile(picked('Plan.txt', 'Plan\n\nBody'))).content)).toEqual(['Body']);
+    expect(blockTexts((await importFile(picked('Plan.md', '# Plan\n\nBody'))).content)).toEqual(['Body']);
+    expect(blockTexts((await importFile(picked('Plan.html', '<h2>plan</h2><p>Body</p>'))).content)).toEqual(['Body']);
+    expect((await importFile(picked('Plan.txt', 'Plan'))).content).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] });
+  });
+
   it('reads a Word file from part of a larger buffer', async () => {
     const bytes = await documentToDocx('Body', doc(paragraph(text('Inside'))));
     const padded = new Uint8Array(bytes.length + 64);
     padded.set(bytes, 32);
     const result = await importFile(picked('Other.docx', padded.subarray(32, 32 + bytes.length)));
     expect(blockTexts(result.content)).toEqual(['Body', 'Inside']);
+  });
+});
+
+describe('files written by Word itself', () => {
+  /** How many lists a piece of text sits inside, or -1 if it is not in the document. */
+  function listDepth(node: JSONContent, wanted: string, depth = 0): number {
+    if (node.text === wanted) return depth;
+    const here = node.type === 'bulletList' || node.type === 'orderedList' ? depth + 1 : depth;
+    for (const child of node.content ?? []) {
+      const found = listDepth(child, wanted, here);
+      if (found >= 0) return found;
+    }
+    return -1;
+  }
+
+  it('keeps what matters from a document typed in Word', async () => {
+    const result = await importFile(fixture('word-authored.docx'));
+    expect(result.title).toBe('word-authored');
+    expect(result.warnings).toEqual(['1 image was left out, because Wordsmith documents hold text only.']);
+
+    const blocks = result.content.content ?? [];
+    const block = (wanted: string) => blocks.find((candidate) => plainText(candidate) === wanted);
+    expect(block('Annual report')).toMatchObject({ type: 'heading', attrs: { level: 1 } });
+    expect(block('Overview')).toMatchObject({ type: 'heading', attrs: { level: 1 } });
+    expect(block('Details')).toMatchObject({ type: 'heading', attrs: { level: 2 } });
+    expect(block('Finer points')).toMatchObject({ type: 'heading', attrs: { level: 3 } });
+    expect(block('A fourth-level heading')).toMatchObject({ type: 'heading', attrs: { level: 3 } });
+
+    const texts = nodesOfType(result.content, 'text');
+    const marksOf = (wanted: string) => texts.find((node) => node.text === wanted)?.marks?.map((mark) => mark.type);
+    expect(marksOf('bold words')).toEqual(['bold']);
+    expect(marksOf('italic words')).toEqual(['italic']);
+    expect(marksOf('underlined words')).toEqual(['underline']);
+    expect(marksOf('struck words')).toEqual(['strike']);
+    expect(texts.find((node) => node.text === 'the full report')?.marks?.[0].attrs?.href).toBe('https://example.com/report?year=2026');
+
+    expect(nodesOfType(result.content, 'bulletList').map(plainText)).toEqual(['First bulletMiddle bulletSecond bullet']);
+    expect(nodesOfType(result.content, 'orderedList').map(plainText)).toEqual(['First stepMiddle stepSecond step']);
+    expect(nodesOfType(result.content, 'blockquote').map(plainText)).toEqual(['A wise person said this.']);
+
+    const order = blockTexts(result.content);
+    expect(order.slice(order.indexOf('Before the table'), order.indexOf('Before the table') + 6)).toEqual([
+      'Before the table',
+      'Region',
+      'Sales',
+      'North',
+      'Up 12%',
+      'Before the picture',
+    ]);
+    expect(order).not.toContain('');
+  });
+
+  it('keeps nested lists in our own export after it was edited and saved in Word', async () => {
+    const { data } = fixture('edited-in-word.docx');
+    const result = await importFile(picked('Lists in Word.docx', data));
+    const blocks = blockTexts(result.content);
+    expect(blocks[0]).toBe('A: plain numbers');
+    expect(blocks.at(-1)).toBe('Added in Word.');
+
+    expect(listDepth(result.content, 'A1')).toBe(1);
+    expect(listDepth(result.content, 'C1')).toBe(1);
+    expect(listDepth(result.content, 'C1a')).toBe(2);
+    expect(listDepth(result.content, 'C2a')).toBe(2);
+    expect(listDepth(result.content, 'E1a-ii')).toBe(3);
+    expect(listDepth(result.content, 'Depth 5')).toBe(5);
+    // Mammoth stops nesting at five levels, but the words beyond that must still arrive.
+    for (let depth = 6; depth <= 11; depth += 1) expect(plainText(result.content)).toContain(`Depth ${depth}`);
+
+    const lists = nodesOfType(result.content, 'bulletList').filter((list) => plainText(list).startsWith('C1'));
+    expect(nodesOfType(lists[0], 'orderedList').map(plainText)).toEqual(['C1aC1b', 'C2a']);
   });
 });
 
@@ -821,6 +942,13 @@ describe('saving, copying and printing', () => {
       expect(parsed.querySelector('em')?.getAttribute('style')).toContain('font-style:italic');
       expect(parsed.querySelector('a')?.getAttribute('style')).toContain('text-decoration:underline');
       expect(parsed.querySelector('ul')?.getAttribute('style')).toContain('padding-left');
+    });
+
+    it('puts the look of a quote on its paragraphs, where Word keeps it', async () => {
+      const { parsed } = await copied(doc({ type: 'blockquote', content: [paragraph(text('Quoted'))] }, paragraph(text('Not quoted'))));
+      const [quoted, plain] = Array.from(parsed.querySelectorAll('p'));
+      expect(quoted.getAttribute('style')).toMatch(/margin:0 0 8pt;margin-left:12pt;.*border-left:/);
+      expect(plain.getAttribute('style')).not.toContain('border-left');
     });
 
     it('unwraps single paragraphs in list items but keeps real ones', async () => {

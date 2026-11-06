@@ -77,6 +77,12 @@ const textBlock = (index: number, pieces: string[]) =>
     sseEvent({ type: 'content_block_stop', index }),
   ].join('');
 
+/** The start of a reply that is still arriving. */
+const firstPiece = (text: string) =>
+  start() +
+  sseEvent({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }) +
+  sseEvent({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } });
+
 const end = (stopReason: string) =>
   sseEvent({ type: 'message_delta', delta: { stop_reason: stopReason, stop_sequence: null }, usage: { output_tokens: 8 } }) +
   sseEvent({ type: 'message_stop' });
@@ -235,14 +241,10 @@ describe('streamed text', () => {
   });
 
   it('delivers text before the reply has finished', async () => {
-    let finish = () => undefined as void;
+    let finish: () => void = () => undefined;
     reply = (response) => {
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      response.write(
-        start() +
-          sseEvent({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }) +
-          sseEvent({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Early' } }),
-      );
+      response.write(firstPiece('Early'));
       finish = () => {
         response.end(
           sseEvent({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: ' and late.' } }) +
@@ -370,11 +372,7 @@ describe('cancelling', () => {
     reply = (response) => {
       hungUp = new Promise((resolve) => response.on('close', resolve));
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      response.write(
-        start() +
-          sseEvent({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }) +
-          sseEvent({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Started' } }),
-      );
+      response.write(firstPiece('Started'));
     };
     const controller = new AbortController();
     const error = await failure(rewrite, { signal: controller.signal, onText: () => controller.abort() });
@@ -464,5 +462,36 @@ describe('proofreading', () => {
     const error = await failure(proofread);
     expect(error.code).toBe('unknown');
     expect(error.message).toBe('The AI reply could not be read. Try again.');
+  });
+
+  it('says a long reply was cut off, rather than showing a JSON error', async () => {
+    reply = textReply(['{"suggestions":[{"paragraph":1,"quo'], 'max_tokens');
+    const error = await failure(proofread);
+    expect(error.code).toBe('truncated');
+    expect(error.message).not.toContain('JSON');
+  });
+
+  it('says the model declined partway through, rather than showing a JSON error', async () => {
+    reply = textReply(['{"suggestions":['], 'refusal');
+    expect((await failure(proofread)).code).toBe('declined');
+  });
+
+  it('reads a reply that a fallback to another model split in two', async () => {
+    const json = JSON.stringify({ suggestions: [suggestion] });
+    const handover = { type: 'fallback', from: { model: OPUS }, to: { model: 'claude-opus-4-8' } };
+    reply = streamed(
+      start(),
+      textBlock(0, [json.slice(0, 20)]),
+      sseEvent({ type: 'content_block_start', index: 1, content_block: handover }),
+      sseEvent({ type: 'content_block_stop', index: 1 }),
+      textBlock(2, [json.slice(20)]),
+      end('end_turn'),
+    );
+    expect(await run(proofread)).toEqual({ kind: 'proofread', suggestions: [suggestion] });
+  });
+
+  it('never shows a parser error to the writer', async () => {
+    reply = textReply(['not json at all']);
+    expect((await failure(proofread)).message).toBe('The AI reply could not be read. Try again.');
   });
 });

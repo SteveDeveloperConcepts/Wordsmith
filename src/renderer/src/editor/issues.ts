@@ -193,8 +193,13 @@ export function applyFix(view: EditorView, id: string, fix: Fix): boolean {
   return true;
 }
 
-/** Replace the whole sentence around an issue (used for AI rewrites). */
-export function replaceSentence(view: EditorView, id: string, text: string): boolean {
+/**
+ * Replace the whole sentence around an issue (used for AI rewrites), if it still says
+ * what it did. Positions are only known for the flagged words until the next check, so
+ * an edit elsewhere in the sentence would be overwritten, and leave its last letters behind.
+ */
+export function replaceSentence(view: EditorView, id: string, expected: string, text: string): boolean {
+  if (sentenceText(view.state, id) !== expected) return false;
   const placed = locateIssue(view.state, id);
   if (!placed) return false;
   const { sentence } = placed.issue;

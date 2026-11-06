@@ -2,7 +2,7 @@ import { PluginKey } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
 import { BubbleMenu, type BubbleMenuProps } from '@tiptap/react/menus';
 import { Sparkles } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
+import { useEffect, type KeyboardEvent } from 'react';
 import { REWRITE_PRESETS } from '@shared/ai-types';
 import { useAiReady } from '../ai/client';
 import { selectedPassage, useAi } from '../state/ai';
@@ -28,16 +28,22 @@ const MENU_OPTIONS: BubbleMenuProps['options'] = {
   shift: { crossAxis: true, padding: 12 },
 };
 
+function hideMenu(editor: Editor): void {
+  if (!editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(menuKey, 'hide'));
+}
+
 /** Quick AI actions, floating over the selected text. */
 export function SelectionMenu({ editor }: { editor: Editor }) {
   const ready = useAiReady();
+  const rewriting = useAi((s) => s.rewrite.status === 'running');
+
+  // However a rewrite started, the menu has done its job until the selection changes.
+  useEffect(() => {
+    if (rewriting) hideMenu(editor);
+  }, [rewriting, editor]);
 
   // Someone who has not set up AI should not get a toolbar over every selection.
   if (!ready) return null;
-
-  const hide = () => {
-    if (!editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(menuKey, 'hide'));
-  };
 
   const runPreset = (id: string) => {
     const preset = REWRITE_PRESETS.find((p) => p.id === id);
@@ -45,15 +51,14 @@ export function SelectionMenu({ editor }: { editor: Editor }) {
     const { showSection, runRewrite } = useAi.getState();
     showSection('rewrite');
     runRewrite(preset.instruction, preset.label);
-    // Hiding takes the buttons away, and the keyboard with them if it was here.
+    // The menu is about to go, and the keyboard with it if it was here.
     editor.view.focus();
-    hide();
   };
 
   const askForInstruction = () => {
     useAi.getState().showSection('rewrite');
     useAi.setState({ focusInstruction: true });
-    hide();
+    hideMenu(editor);
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -73,7 +78,7 @@ export function SelectionMenu({ editor }: { editor: Editor }) {
         // The library only reacts when the editor itself blurs, which already happened on the way in.
         if (next instanceof Node && (event.currentTarget.contains(next) || editor.view.dom.contains(next))) return;
         // Not straight away: hiding the menu with the keyboard in it blurs it, part way through the hiding.
-        queueMicrotask(hide);
+        queueMicrotask(() => hideMenu(editor));
       }}
     >
       <div
