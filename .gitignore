@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build output
+out/
+dist/
+dist-web/
+release/
+
+# tooling
+.vite/
+coverage/
+test-results/
+*.tsbuildinfo
+
+# logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# local environment (never commit API keys)
+.env
+.env.*
+
+# local tooling
+.claude/
