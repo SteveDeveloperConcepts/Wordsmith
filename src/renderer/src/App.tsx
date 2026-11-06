@@ -1,15 +1,24 @@
 import type { Editor } from '@tiptap/react';
-import { PanelRight } from 'lucide-react';
+import { PanelLeft, PanelRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AssistantPanel } from './assistant/AssistantPanel';
+import { AssistantPanel, type TabDefinition } from './assistant/AssistantPanel';
+import { InsightsTab } from './assistant/InsightsTab';
+import { GoalsButton, GoalsDialog } from './dialogs/GoalsDialog';
+import { SettingsDialog } from './dialogs/SettingsDialog';
 import { analysisClient } from './editor/analysisClient';
 import { EditorPane } from './editor/EditorPane';
 import { Toolbar } from './editor/Toolbar';
+import { LibrarySidebar } from './library/LibrarySidebar';
 import { formatDuration, formatNumber } from './lib/format';
 import { desktop } from './platform';
 import { useLibrary } from './state/library';
 import { useSession } from './state/session';
 import { resolveTheme, useSettings } from './state/settings';
+
+/** Below this width the sidebar floats over the workspace instead of squeezing the page. */
+const SIDEBAR_OVERLAY_QUERY = '(max-width: 1120px)';
+
+const ASSISTANT_TABS: TabDefinition[] = [{ id: 'insights', label: 'Insights', render: () => <InsightsTab /> }];
 
 /** Applies the chosen theme to the document, following the system setting when asked to. */
 function useTheme(): void {
@@ -27,6 +36,18 @@ function useTheme(): void {
   }, [theme]);
 }
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+  return matches;
+}
+
 function StatusBar() {
   const result = useSession((s) => s.result);
   const checking = useSession((s) => s.checking);
@@ -42,29 +63,36 @@ function StatusBar() {
         ? { label: 'Grammar engine unavailable', className: 'is-error' }
         : { label: 'All checked', className: '' };
 
+  const showInsights = () => {
+    useSettings.getState().update({ assistantOpen: true });
+    useSession.getState().setTab('insights');
+  };
+
   return (
     <footer className="statusbar">
-      {selection ? (
-        <span className="statusbar__item">
-          <strong>{formatNumber(selection.words)}</strong> of {formatNumber(stats?.words ?? 0)} words selected ·{' '}
-          <strong>{formatNumber(selection.characters)}</strong> characters
-        </span>
-      ) : (
-        <>
+      <button type="button" className="statusbar__button" title="Show insights" onClick={showInsights}>
+        {selection ? (
           <span className="statusbar__item">
-            <strong>{formatNumber(stats?.words ?? 0)}</strong> words
+            <strong>{formatNumber(selection.words)}</strong> of {formatNumber(stats?.words ?? 0)} words selected ·{' '}
+            <strong>{formatNumber(selection.characters)}</strong> characters
           </span>
-          <span className="statusbar__item">
-            <strong>{formatNumber(stats?.characters ?? 0)}</strong> characters
-          </span>
-          <span className="statusbar__item">
-            <strong>{formatNumber(stats?.sentences ?? 0)}</strong> sentences
-          </span>
-          {stats && stats.words > 0 && (
-            <span className="statusbar__item">{formatDuration(stats.readingTimeSec)} read</span>
-          )}
-        </>
-      )}
+        ) : (
+          <>
+            <span className="statusbar__item">
+              <strong>{formatNumber(stats?.words ?? 0)}</strong> words
+            </span>
+            <span className="statusbar__item">
+              <strong>{formatNumber(stats?.characters ?? 0)}</strong> characters
+            </span>
+            <span className="statusbar__item">
+              <strong>{formatNumber(stats?.sentences ?? 0)}</strong> sentences
+            </span>
+            {stats && stats.words > 0 && (
+              <span className="statusbar__item">{formatDuration(stats.readingTimeSec)} read</span>
+            )}
+          </>
+        )}
+      </button>
       <span className="statusbar__spacer" />
       <span className={`statusbar__state ${state.className}`}>{state.label}</span>
     </footer>
@@ -92,8 +120,10 @@ export function App() {
   const ready = useLibrary((s) => s.ready);
   const doc = useLibrary((s) => s.current);
   const assistantOpen = useSettings((s) => s.assistantOpen);
+  const libraryOpen = useSettings((s) => s.libraryOpen);
   const update = useSettings((s) => s.update);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const overlay = useMediaQuery(SIDEBAR_OVERLAY_QUERY);
 
   useEffect(() => {
     void useLibrary.getState().init();
@@ -113,6 +143,12 @@ export function App() {
     };
   }, []);
 
+  // A sidebar floating over the page has done its job once a document is chosen.
+  const docId = doc?.id;
+  useEffect(() => {
+    if (overlay && docId) useSettings.getState().update({ libraryOpen: false });
+  }, [overlay, docId]);
+
   if (!ready || !doc) {
     return (
       <div className="loading">
@@ -123,10 +159,31 @@ export function App() {
 
   return (
     <div className="app">
+      {libraryOpen && (
+        <>
+          {overlay && (
+            <div className="scrim" aria-hidden onClick={() => update({ libraryOpen: false })} />
+          )}
+          <div className={overlay ? 'library-slot library-slot--overlay' : 'library-slot'}>
+            <LibrarySidebar onImport={() => undefined} />
+          </div>
+        </>
+      )}
       <main className="workspace">
         <header className="topbar">
-          <div className="topbar__group">{editor && <Toolbar editor={editor} />}</div>
-          <span className="topbar__spacer" />
+          <div className="topbar__group">
+            <button
+              type="button"
+              className={`icon-btn${libraryOpen ? ' is-active' : ''}`}
+              title={libraryOpen ? 'Hide documents' : 'Show documents'}
+              aria-label="Toggle the documents sidebar"
+              aria-pressed={libraryOpen}
+              onClick={() => update({ libraryOpen: !libraryOpen })}
+            >
+              <PanelLeft size={18} />
+            </button>
+          </div>
+          <div className="topbar__group topbar__group--grow">{editor && <Toolbar editor={editor} />}</div>
           <div className="topbar__group">
             <button
               type="button"
@@ -143,7 +200,9 @@ export function App() {
         <EditorPane key={doc.id} doc={doc} onEditor={setEditor} />
         <StatusBar />
       </main>
-      {assistantOpen && <AssistantPanel />}
+      {assistantOpen && <AssistantPanel extraTabs={ASSISTANT_TABS} headerAction={<GoalsButton />} />}
+      <GoalsDialog />
+      <SettingsDialog />
       <Toast />
     </div>
   );
