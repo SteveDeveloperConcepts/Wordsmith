@@ -1,0 +1,364 @@
+/* The documents sidebar on the left. */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  width: 256px;
+  flex: none;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 48px;
+  flex: none;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.library__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.library__mark {
+  flex: none;
+}
+
+.library__mark-tile {
+  fill: var(--primary);
+}
+
+.library__mark-letter {
+  fill: none;
+  stroke: var(--on-primary);
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.library__search {
+  position: relative;
+  flex: none;
+  padding: 10px 10px 6px;
+}
+
+.library__search > svg {
+  position: absolute;
+  top: 19px;
+  left: 20px;
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.library__search .input {
+  padding: 0 28px 0 30px;
+  appearance: none;
+}
+
+/* The clear button below replaces the browser's own, which ignores the theme. */
+.library__search .input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.library__clear {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text-2);
+}
+
+.library__clear:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* Announces search results to screen readers; the list itself shows them to everyone else. */
+.library__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.library__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 10px 10px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.library__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 36px 20px;
+  overflow-y: auto;
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.library__empty svg {
+  flex: none;
+  color: var(--text-3);
+}
+
+.library__empty h3 {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.library__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex: none;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- One row ---------- */
+
+.doc {
+  position: relative;
+  flex: none;
+}
+
+.doc__open {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-m);
+  background: none;
+  text-align: left;
+}
+
+.doc:hover .doc__open {
+  background: var(--surface-3);
+}
+
+.doc.is-active .doc__open {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.doc__open:focus-visible {
+  outline-offset: -2px;
+}
+
+.doc__title,
+.doc__preview {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doc__title {
+  /* Clear of the three-dot button. */
+  padding-right: 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.doc__preview {
+  margin-top: 1px;
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.doc__preview--empty {
+  font-style: italic;
+}
+
+.doc__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  color: var(--text-2);
+  font-size: 11.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.doc__score--good {
+  --c: var(--good);
+}
+
+.doc__score--warn {
+  --c: var(--warn);
+}
+
+.doc__score--bad {
+  --c: var(--bad);
+}
+
+/* No score yet: an outline, so it does not read as a grade. */
+.doc__score--none {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--text-3);
+}
+
+.doc__more {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  opacity: 0;
+}
+
+/* Hidden by opacity, not display, so it stays in the tab order. */
+.doc:hover .doc__more,
+.doc__more:focus-visible,
+.doc__more[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.doc__more:hover,
+.doc__more[aria-expanded='true'] {
+  background: var(--border);
+  color: var(--text);
+}
+
+@media (hover: none) {
+  .doc__more {
+    opacity: 1;
+  }
+}
+
+/* ---------- Row menu ---------- */
+
+.doc-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 148px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.doc-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  font-size: 13px;
+  text-align: left;
+}
+
+.doc-menu__item:hover,
+.doc-menu__item:focus {
+  background: var(--surface-3);
+}
+
+.doc-menu__item:focus-visible {
+  outline-offset: -2px;
+}
+
+.doc-menu__item--danger {
+  color: var(--bad);
+}
+
+/* ---------- Delete confirmation ---------- */
+
+.doc-confirm {
+  padding: 10px;
+  border: 1px solid var(--bad);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.doc-confirm__question {
+  display: flex;
+  gap: 0.25em;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.doc-confirm__title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doc-confirm__warning {
+  margin-top: 1px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.doc-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.doc-confirm .btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bad) 86%, var(--text));
+}
+
+/* High-contrast mode drops backgrounds and shadows, which is all that marks the open document. */
+@media (forced-colors: active) {
+  .doc.is-active .doc__open {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+@media print {
+  .library {
+    display: none;
+  }
+}
