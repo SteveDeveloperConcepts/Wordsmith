@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      The page is static, so this is the only place to set a policy. It backs up the
+      privacy line in the pane: connect-src keeps this page from sending text anywhere.
+      office.js loads its other parts from its own host, and the old host stays listed
+      in case any of those still come from there.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' https://appsforoffice.microsoft.com https://officeapis.public.onecdn.static.microsoft 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Wordsmith</title>
+    <script src="https://officeapis.public.onecdn.static.microsoft/1/office.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

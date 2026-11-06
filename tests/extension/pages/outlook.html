@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Outlook on the web structure</title>
+    <style>
+      body { margin: 0; font: 14px/1.5 'Segoe UI', sans-serif; background: #faf9f8; }
+      .pane { width: 720px; margin: 24px auto; padding: 16px; background: #fff; border: 1px solid #edebe9; }
+      [role='textbox'] { min-height: 280px; padding: 8px; outline: none; }
+    </style>
+  </head>
+  <body>
+    <main class="pane">
+      <div
+        id="body"
+        role="textbox"
+        aria-label="Message body"
+        aria-multiline="true"
+        contenteditable="true"
+        dir="ltr"
+      >
+        <div class="elementToProof">Hi Sam, thank you for you're message about the <b>budgett</b> report.</div>
+        <div class="elementToProof"><br /></div>
+        <div class="elementToProof">I wil send the numbers tomorrow.</div>
+        <div id="Signature">
+          <p>Stephe Vaubel, Hed of Sailes</p>
+          <p>Wordsmth Incorported</p>
+        </div>
+        <div id="appendonsend"></div>
+        <hr tabindex="-1" style="display: inline-block; width: 98%" />
+        <div id="divRplyFwdMsg" dir="ltr">
+          <b>From:</b> Sam Oldfeld<br />
+          <b>Subject:</b> Quartely numbres
+        </div>
+        <div>Pleese send the quartely numbres befor Friday.</div>
+      </div>
+    </main>
+  </body>
+</html>

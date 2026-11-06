@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>An editor that rejects outside edits</title>
+    <style>
+      #body { width: 520px; min-height: 120px; padding: 8px; border: 1px solid #bbb; font: 15px/1.5 Arial, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="body" role="textbox" aria-multiline="true" contenteditable="true">This body has a mispelled word.</div>
+    <script>
+      const body = document.getElementById('body');
+      const original = body.textContent;
+      body.addEventListener('input', () => {
+        body.textContent = original;
+      });
+    </script>
+  </body>
+</html>

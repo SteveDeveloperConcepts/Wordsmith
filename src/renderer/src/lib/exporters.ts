@@ -475,8 +475,11 @@ export function htmlForPasting(content: JSONContent): string {
   return body.innerHTML;
 }
 
-/** Copy the document so that it pastes with its formatting, or as plain text where that cannot be done. */
-export async function copyFormatted(content: JSONContent): Promise<void> {
+/**
+ * Copy the document so that it pastes with its formatting, or as plain text where
+ * that cannot be done. Resolves with whether the formatting went too.
+ */
+export async function copyFormatted(content: JSONContent): Promise<boolean> {
   const text = blocksText(content.content);
   try {
     await navigator.clipboard.write([
@@ -485,7 +488,9 @@ export async function copyFormatted(content: JSONContent): Promise<void> {
         'text/plain': new Blob([text], { type: 'text/plain' }),
       }),
     ]);
+    return true;
   } catch {
     await copyText(text);
+    return false;
   }
 }

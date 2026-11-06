@@ -149,6 +149,10 @@ export function IntegrationsSection() {
         <div className="settings-prose">
           <p>The Office add-in puts Wordsmith in a panel beside your document or email draft.</p>
           <p>
+            In Outlook it needs a Microsoft 365 or Outlook.com mailbox. Microsoft does not run add-ins on Gmail or Yahoo
+            accounts, so use Check Anywhere for those.
+          </p>
+          <p>
             <OutLink href={ADD_IN_GUIDE}>How to install the add-in</OutLink>
           </p>
         </div>

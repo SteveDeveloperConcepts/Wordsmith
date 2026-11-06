@@ -105,9 +105,6 @@ function htmlToContent(html: string): Converted {
   // The schema stops at h3; left alone, deeper headings would turn into plain paragraphs.
   for (const heading of Array.from(body.querySelectorAll('h4, h5, h6'))) replaceTag(heading, 'h3');
 
-  // A code block holds plain text, so a line break has to be a newline to stay in it.
-  for (const lineBreak of Array.from(body.querySelectorAll('pre br'))) lineBreak.replaceWith('\n');
-
   // Markdown ends every code block with a newline that nobody typed, and a browser would not show it.
   for (const pre of Array.from(body.querySelectorAll('pre'))) {
     const last = (pre.querySelector('code') ?? pre).lastChild;

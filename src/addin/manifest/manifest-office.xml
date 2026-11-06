@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+  <Id>6f2a1c1e-3b7d-4a55-9b1e-0d4a7c2e8f10</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Wordsmith</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Wordsmith"/>
+  <Description DefaultValue="Private grammar and style checking. Text stays on your device."/>
+  <IconUrl DefaultValue="__ADDIN_BASE_URL__icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="__ADDIN_BASE_URL__icon-64.png"/>
+  <SupportUrl DefaultValue="https://github.com/SteveDeveloperConcepts/Wordsmith/issues"/>
+  <AppDomains>
+    <AppDomain>__ADDIN_ORIGIN__</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document"/>
+    <Host Name="Presentation"/>
+    <Host Name="Workbook"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="__ADDIN_BASE_URL__taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Ws.Group">
+                <Label resid="Ws.Label"/>
+                <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                <Control xsi:type="Button" id="Ws.Open">
+                  <Label resid="Ws.Label"/>
+                  <Supertip><Title resid="Ws.Label"/><Description resid="Ws.Tip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><TaskpaneId>Ws.Pane</TaskpaneId><SourceLocation resid="Ws.Url"/></Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Ws.Group">
+                <Label resid="Ws.Label"/>
+                <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                <Control xsi:type="Button" id="Ws.Open">
+                  <Label resid="Ws.Label"/>
+                  <Supertip><Title resid="Ws.Label"/><Description resid="Ws.Tip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><TaskpaneId>Ws.Pane</TaskpaneId><SourceLocation resid="Ws.Url"/></Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Ws.Group">
+                <Label resid="Ws.Label"/>
+                <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                <Control xsi:type="Button" id="Ws.Open">
+                  <Label resid="Ws.Label"/>
+                  <Supertip><Title resid="Ws.Label"/><Description resid="Ws.Tip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="Ws.I16"/><bt:Image size="32" resid="Ws.I32"/><bt:Image size="80" resid="Ws.I80"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><TaskpaneId>Ws.Pane</TaskpaneId><SourceLocation resid="Ws.Url"/></Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Ws.I16" DefaultValue="__ADDIN_BASE_URL__icon-16.png"/>
+        <bt:Image id="Ws.I32" DefaultValue="__ADDIN_BASE_URL__icon-32.png"/>
+        <bt:Image id="Ws.I80" DefaultValue="__ADDIN_BASE_URL__icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Ws.Url" DefaultValue="__ADDIN_BASE_URL__taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Ws.Label" DefaultValue="Wordsmith"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Ws.Tip" DefaultValue="Open the Wordsmith checker."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

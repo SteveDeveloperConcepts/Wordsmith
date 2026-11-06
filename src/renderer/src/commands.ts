@@ -75,8 +75,8 @@ async function copyDocument(): Promise<void> {
   const content = currentContent();
   if (!content) return;
   try {
-    await copyFormatted(content);
-    notify('Copied. Paste into Word or an email to keep the formatting.');
+    const formatted = await copyFormatted(content);
+    notify(formatted ? 'Copied. Paste into Word or an email to keep the formatting.' : 'Copied as plain text.');
   } catch (err) {
     notify(`Could not copy the document. ${messageOf(err)}`, 'error');
   }

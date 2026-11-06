@@ -8,7 +8,8 @@ Wordsmith works in its own editor, and it also works where you already write:
 | --- | --- |
 | Any desktop app | **Check Anywhere.** Select text, press `Ctrl+Alt+W` (`⌃⌥W` on a Mac), fix it in a small floating window, and choose Replace. |
 | Word, PowerPoint, Excel | **Office add-in.** A panel beside your document, on Windows, Mac, and the web. |
-| Outlook (classic, new, web, Mac) | **Office add-in.** A panel beside your draft. It skips your signature and the quoted thread. |
+| Outlook with a Microsoft 365 or Outlook.com mailbox | **Office add-in.** A panel beside your draft, in classic, new, web, and Mac Outlook. It skips your signature and the quoted thread. |
+| Outlook with a Gmail or Yahoo account | **Check Anywhere.** Microsoft does not run add-ins on these accounts. |
 | Outlook on the web, Gmail, other sites | **Browser extension.** Live underlines as you type, in Chrome and Edge. |
 | Anything else | Copy with formatting, or export to Word, PDF, HTML, Markdown, or plain text. |
 

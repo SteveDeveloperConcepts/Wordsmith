@@ -1,0 +1,128 @@
+@import '../../renderer/src/styles/tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 300px;
+  background: var(--surface);
+  color: var(--text);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.popup {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mark {
+  border-radius: 5px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+input[type='checkbox'] {
+  margin: 0;
+  accent-color: var(--engagement);
+}
+
+select {
+  padding: 3px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.site {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.site p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.site button {
+  justify-self: start;
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-s);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.site button:hover {
+  background: var(--primary-hover);
+}
+
+.checks {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.checks legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.check input {
+  margin-top: 3px;
+}
+
+.check small {
+  display: block;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.foot {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.popup[data-off='true'] .site,
+.popup[data-off='true'] .checks,
+.popup[data-off='true'] .row:has(select) {
+  opacity: 0.55;
+}

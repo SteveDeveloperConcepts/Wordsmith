@@ -230,6 +230,8 @@ describe('documentToMarkdown', () => {
   it('keeps a list tight when no item has more than one paragraph', () => {
     const markdown = documentToMarkdown('', doc(bullets(item(paragraph(text('One'))), item(paragraph(text('Two'))))));
     expect(markdown).toBe('- One\n- Two\n');
+    const nested = doc(bullets(item(paragraph(text('One')), bullets(item(paragraph(text('Inner'))))), item(paragraph(text('Two')))));
+    expect(documentToMarkdown('', nested)).toBe('- One\n  - Inner\n- Two\n');
   });
 
   it('leaves the title out when there is none', () => {
@@ -575,9 +577,16 @@ describe('importFile', () => {
 
   it('flattens tables so that no two cells run together', async () => {
     const result = await importFile(
-      picked('t.html', '<table><tr><td>One</td><td><b>Two</b></td></tr><tr><td><table><tr><td>Inner</td></tr></table></td><td><p>A</p><p>B</p></td></tr></table>'),
+      picked(
+        't.html',
+        `<table>
+          <tr><td>One</td><td><b>Two</b></td></tr>
+          <tr><td>Before<table><tr><td>Inner</td></tr></table>After</td><td><p>A</p><p>B</p></td></tr>
+          <tr><td><p></p></td><td>&nbsp;</td><td></td></tr>
+        </table>`,
+      ),
     );
-    expect(blockTexts(result.content)).toEqual(['One', 'Two', 'Inner', 'A', 'B']);
+    expect(blockTexts(result.content)).toEqual(['One', 'Two', 'Before', 'Inner', 'After', 'A', 'B']);
     expect(nodesOfType(result.content, 'text')[1].marks).toEqual([{ type: 'bold' }]);
   });
 
@@ -604,12 +613,14 @@ describe('importFile', () => {
     expect((await importFile(picked('Plan.txt', 'Plan'))).content).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] });
   });
 
-  it('reads a Word file from part of a larger buffer', async () => {
-    const bytes = await documentToDocx('Body', doc(paragraph(text('Inside'))));
-    const padded = new Uint8Array(bytes.length + 64);
-    padded.set(bytes, 32);
-    const result = await importFile(picked('Other.docx', padded.subarray(32, 32 + bytes.length)));
-    expect(blockTexts(result.content)).toEqual(['Body', 'Inside']);
+  it('reads only its own part of a buffer it shares with another file', async () => {
+    const wanted = await documentToDocx('', doc(paragraph(text('Inside'))));
+    const neighbor = await documentToDocx('', doc(paragraph(text('Neighbor'))));
+    const shared = new Uint8Array(wanted.length + neighbor.length);
+    shared.set(wanted);
+    shared.set(neighbor, wanted.length);
+    const result = await importFile(picked('Other.docx', shared.subarray(0, wanted.length)));
+    expect(blockTexts(result.content)).toEqual(['Inside']);
   });
 });
 

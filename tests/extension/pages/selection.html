@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>An editor that follows selectionchange</title>
+    <style>
+      #body { width: 520px; min-height: 120px; padding: 8px; border: 1px solid #bbb; font: 15px/1.5 Arial, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <!-- Keeps its own selection from selectionchange, as Lexical and others do, and applies
+         input to that. An edit made before the event fires hits the old selection, which is
+         how a fix can land at the caret and leave the flagged word behind. -->
+    <div id="body" role="textbox" aria-multiline="true" contenteditable="true">This body has a mispelled word in it.</div>
+    <script>
+      const body = document.getElementById('body');
+      let selection = { from: 0, to: 0 };
+      window.pageModel = body.textContent;
+
+      document.addEventListener('selectionchange', () => {
+        const range = getSelection().rangeCount ? getSelection().getRangeAt(0) : null;
+        if (range && body.contains(range.startContainer)) {
+          selection = { from: range.startOffset, to: range.endOffset };
+        }
+      });
+
+      body.addEventListener('input', (event) => {
+        const text = window.pageModel;
+        window.pageModel = text.slice(0, selection.from) + (event.data ?? '') + text.slice(selection.to);
+      });
+    </script>
+  </body>
+</html>

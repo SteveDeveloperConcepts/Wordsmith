@@ -27,11 +27,6 @@
     --clarity: #000 !important;
   }
 
-  /*
-   * The chrome by name, then anything beside the page by position, so that chrome
-   * added later stays out too. The :has() keeps that from ever hiding the text
-   * itself if the editor ends up inside another element.
-   */
   .library,
   .library-slot,
   .scrim,
@@ -42,11 +37,21 @@
   .toast,
   .dialog,
   .doc-menu,
-  .link-form,
+  .link-form {
+    display: none !important;
+  }
+
+  /*
+   * Anything else beside the page, so that chrome added later stays out too. The
+   * :has() keeps this from ever hiding the text itself if the editor ends up inside
+   * another element. It is a separate rule because a browser without :has() drops
+   * the whole list it appears in, and the names above must still apply there.
+   */
   body > :not(:has(.page-scroll)),
   .app > :not(:has(.page-scroll)),
   .workspace > :not(.page-scroll, :has(.page-scroll)),
-  .page-scroll > :not(.page) {
+  .page-scroll > :not(.page),
+  .page > :not(.title-input, :has(.ws-prose)) {
     display: none !important;
   }
 

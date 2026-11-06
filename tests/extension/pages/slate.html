@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>An editor that owns its text</title>
+    <style>
+      #body { width: 520px; min-height: 120px; padding: 8px; border: 1px solid #bbb; font: 15px/1.5 Arial, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <!-- Behaves as Slate does: the model is the truth, DOM changes it was not told about
+         are thrown away on the next render, and edits arrive through beforeinput. -->
+    <div id="body" data-slate-editor="true" role="textbox" aria-multiline="true" contenteditable="true"></div>
+    <script>
+      const body = document.getElementById('body');
+      window.pageModel = 'This body has a mispelled word.';
+      const render = () => {
+        const line = document.createElement('div');
+        line.textContent = window.pageModel;
+        body.replaceChildren(line);
+      };
+      render();
+      body.addEventListener('beforeinput', (event) => {
+        if (event.inputType !== 'insertReplacementText') return;
+        event.preventDefault();
+        const [target] = event.getTargetRanges();
+        const text = window.pageModel;
+        window.pageModel = text.slice(0, target.startOffset) + event.data + text.slice(target.endOffset);
+        render();
+      });
+      body.addEventListener('input', render);
+    </script>
+  </body>
+</html>

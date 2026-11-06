@@ -14,8 +14,13 @@ export interface EngineStatus {
 
 type StatusListener = (status: EngineStatus) => void;
 
-class AnalysisClient {
+/** How long to wait before starting a worker again after one has failed. */
+const RETRY_DELAY = 10_000;
+
+export class AnalysisClient {
   private worker: Worker | null = null;
+  /** No new worker before this time. */
+  private retryAt = 0;
   private nextId = 1;
   private waiting = new Map<number, (result: AnalysisResult | null) => void>();
   private listeners = new Set<StatusListener>();
@@ -30,6 +35,11 @@ class AnalysisClient {
     });
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => this.receive(event.data);
     worker.onerror = (event) => {
+      // Requests sent to a worker that failed would never get an answer, so it is
+      // discarded and a later request starts another.
+      worker.terminate();
+      this.worker = null;
+      this.retryAt = Date.now() + RETRY_DELAY;
       this.setStatus({ started: true, grammarEngineReady: false, error: event.message || 'The analysis worker failed to start.' });
       for (const resolve of this.waiting.values()) resolve(null);
       this.waiting.clear();
@@ -89,6 +99,7 @@ class AnalysisClient {
 
   /** Analyze a document. Resolves with null if a newer request superseded this one. */
   analyze(request: AnalyzeRequest): Promise<AnalysisResult | null> {
+    if (Date.now() < this.retryAt) return Promise.resolve(null);
     this.ensureWorker();
     const id = this.nextId++;
     return new Promise((resolve) => {

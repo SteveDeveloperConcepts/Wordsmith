@@ -1,0 +1,260 @@
+/* The task pane: a column about 320px wide, built from the app's own styles. */
+@import '../renderer/src/styles/tokens.css';
+@import '../renderer/src/styles/app.css';
+@import '../renderer/src/styles/assistant.css';
+@import '../renderer/src/styles/editor.css';
+@import '../renderer/src/styles/settings.css';
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.pane__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 10px;
+}
+
+.pane__summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.pane__status {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.pane__count {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.pane__actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+
+.pane__status-line {
+  flex: none;
+  padding: 0 12px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+.pane__status-line:not(:empty) {
+  padding-bottom: 8px;
+}
+
+/* WebView2 hides scroll bars until hovered unless a box always scrolls. */
+.pane__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  padding: 0 12px 12px;
+}
+
+.pane__body--settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pane__privacy {
+  flex: none;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.pane__suggested {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.pane__starting {
+  padding: 16px 12px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.pane__back {
+  align-self: flex-start;
+  margin-left: -7px;
+}
+
+/* The card's fix buttons show only the new text. In a pane they need to say what they do. */
+.pane .fix::before {
+  content: 'Apply: ';
+  font-weight: 500;
+}
+
+.pane .issue__old--strike ~ .issue__fixes .fix::before {
+  content: none;
+}
+
+.pane .empty {
+  padding: 28px 12px;
+}
+
+.pane-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 7px 8px 7px 10px;
+  border-radius: var(--radius-s);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.pane-note--warn {
+  background: var(--warn-soft);
+  color: var(--text);
+}
+
+.pane > .pane-note {
+  flex: none;
+  margin: 0 12px 8px;
+}
+
+.pane-note > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.pane-note__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text-2);
+}
+
+.pane-note__close:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.pane-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pane-section__title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.pane-section__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pane-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.pane-toggle__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.pane-toggle__hint {
+  display: block;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.pane-words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pane-words li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 2px 0 8px;
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.no-office {
+  height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  overflow-y: auto;
+  padding: 20px 16px;
+  font-size: 13.5px;
+}
+
+.no-office h1 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.no-office h2 {
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.no-office p {
+  margin-top: 8px;
+}
+
+.no-office ol {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.no-office li {
+  margin-top: 4px;
+}
+
+.no-office a {
+  color: var(--clarity);
+}
+
+.no-office__note {
+  color: var(--text-2);
+  font-size: 12.5px;
+}

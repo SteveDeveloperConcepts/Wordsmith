@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wordsmith</title>
+    <link rel="stylesheet" href="./popup.css" />
+    <script type="module" src="./popup.ts"></script>
+  </head>
+  <body>
+    <main class="popup">
+      <header class="head">
+        <img id="mark" class="mark" alt="" width="20" height="20" />
+        <h1>Wordsmith</h1>
+      </header>
+
+      <label class="row">
+        <span>Check my writing</span>
+        <input id="enabled" type="checkbox" role="switch" />
+      </label>
+
+      <section id="site" class="site" aria-live="polite"></section>
+
+      <label class="row">
+        <span>English</span>
+        <select id="dialect"></select>
+      </label>
+
+      <fieldset class="checks">
+        <legend>Suggestions</legend>
+        <div id="categories"></div>
+      </fieldset>
+
+      <p class="foot">Your text stays on this computer.</p>
+    </main>
+  </body>
+</html>

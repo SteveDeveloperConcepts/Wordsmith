@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Compose bodies in frames</title>
+  </head>
+  <body>
+    <iframe
+      id="srcdoc"
+      style="width: 560px; height: 150px"
+      srcdoc="<!doctype html><html><body><div id='body' role='textbox' aria-multiline='true' contenteditable='true' style='min-height: 100px'><div>This framed body has a mispelled word.</div></div></body></html>"
+    ></iframe>
+    <iframe id="blank" style="width: 560px; height: 150px"></iframe>
+    <script>
+      // Older rich text editors write an empty frame and make its whole body editable.
+      const doc = document.getElementById('blank').contentDocument;
+      doc.open();
+      doc.write('<!doctype html><html><body contenteditable="true" style="min-height: 100px"><p>This blank frame has a mispelled word.</p></body></html>');
+      doc.close();
+    </script>
+  </body>
+</html>

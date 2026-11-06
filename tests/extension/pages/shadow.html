@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Editor in a closed shadow root</title>
+  </head>
+  <body>
+    <div id="host"></div>
+    <script>
+      const root = document.getElementById('host').attachShadow({ mode: 'closed' });
+      root.innerHTML = `
+        <style>#body { width: 520px; min-height: 120px; padding: 8px; border: 1px solid #bbb; font: 15px/1.5 Arial, sans-serif; }</style>
+        <div id="body" role="textbox" aria-multiline="true" contenteditable="true">
+          <div>This body has a mispelled word.</div>
+        </div>`;
+      window.pageField = root.getElementById('body');
+    </script>
+  </body>
+</html>

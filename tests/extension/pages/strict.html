@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Compose body under a strict content security policy</title>
+  </head>
+  <body>
+    <!-- Served with no inline scripts or styles allowed and Trusted Types required, as webmail is. -->
+    <div id="body" role="textbox" aria-multiline="true" contenteditable="true">
+      <div>This body has a mispelled word in it.</div>
+      <div>The second line is fine.</div>
+      <div>The third line is fine as well, and it gives the field some height.</div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Form fields</title>
+    <style>
+      body { margin: 0; padding: 24px; font: 15px/1.5 Georgia, serif; background: #fff; }
+      textarea { display: block; width: 520px; height: 120px; padding: 10px 12px; font: 16px/24px Georgia, serif; border: 2px solid #999; }
+      input { display: block; width: 520px; margin-top: 16px; padding: 6px 10px; font: 15px Arial, sans-serif; }
+      .pane { height: 90px; margin-top: 16px; overflow: auto; border: 1px solid #ccc; }
+    </style>
+  </head>
+  <body>
+    <textarea id="area">This sentance has a mistake in it.
+
+The secnd line has a typo and this line is quite long so that it wraps around onto another line in the box which proves the mirror wraps at the same place as the field does. The misake here is on the wrapped line.</textarea>
+    <input id="line" value="A singel line of text" />
+    <div class="pane">
+      <div style="height: 200px"></div>
+      <textarea id="clipped" style="height: 60px">Another misake in a scrolled pane.</textarea>
+      <div style="height: 200px"></div>
+    </div>
+  </body>
+</html>

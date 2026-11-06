@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Gmail structure</title>
+    <style>
+      body { margin: 0; font: 14px/1.5 Arial, sans-serif; background: #1f1f1f; color: #e8eaed; }
+      .compose { width: 640px; margin: 24px auto; padding: 12px; background: #2d2e30; }
+      .subject { display: block; box-sizing: border-box; width: 100%; margin-bottom: 8px; padding: 6px; color: inherit; background: none; border: 1px solid #5f6368; }
+      [g_editable] { min-height: 240px; padding: 6px; outline: none; }
+    </style>
+  </head>
+  <body>
+    <main class="compose">
+      <input class="to" aria-label="To recipients" role="combobox" aria-autocomplete="list" />
+      <input class="subject" name="subjectbox" aria-label="Subject" />
+      <div
+        id="body"
+        class="Am aiL Al editable"
+        aria-label="Message Body"
+        aria-multiline="true"
+        role="textbox"
+        g_editable="true"
+        contenteditable="true"
+      >
+        <div>Hello Priya, i recieved the invoice this morning.</div>
+        <div>It look fine to me.</div>
+        <br clear="all" />
+        <div><br /></div>
+        <span class="gmail_signature_prefix">-- </span><br />
+        <div dir="ltr" class="gmail_signature" data-smartmail="gmail_signature">
+          <div>Stephe Vaubel</div>
+          <div>Wordsmth Incorported</div>
+        </div>
+        <div class="gmail_quote gmail_quote_container">
+          <div dir="ltr" class="gmail_attr">On Mon, Priya Sharm wrote:</div>
+          <blockquote class="gmail_quote">Pleese confirm the invoise amont.</blockquote>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
