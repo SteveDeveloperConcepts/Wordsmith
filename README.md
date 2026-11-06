@@ -51,7 +51,17 @@ Then add the pieces you want:
 - **No live underlines inside desktop Word or Outlook.** Use the add-in panel, or Check Anywhere.
 - **Google Docs and Word for the web draw their own text,** so the extension cannot underline in them. In Word for the web, use the add-in.
 - **In Outlook, a fix replaces the draft's body,** because that is the only write Outlook allows. Formatting and images are kept, but you may not be able to undo it with `Ctrl+Z`. The panel says so where that applies.
-- **A few apps do not allow copying** or run with higher privileges than Wordsmith. Check Anywhere then offers the clipboard instead.
+- **A few apps do not allow copying** or run with higher privileges than Wordsmith. Check Anywhere then offers the clipboard instead. In terminals it uses the clipboard only, because `Ctrl+C` there stops the running program.
+
+## What has been tested
+
+| Part | Tested | Not tested yet |
+| --- | --- | --- |
+| Desktop app | End to end on Windows, built and packaged. Builds and unit tests on Apple Silicon and Intel Macs. | The installers themselves have not been installed and run. |
+| Check Anywhere | On Windows, against test windows in separate processes, with plain and formatted text. On Macs, its system calls load and answer. | Real Word and Outlook. The copy and paste flow on a Mac. |
+| Office add-in | In real Chrome against a fake Office. Both manifests pass Microsoft's validator. | Real Office, on any platform. |
+| Browser extension | In real Chromium against local copies of Outlook and Gmail's compose areas. | Real Outlook on the web and Gmail. Edge. |
+| AI features | Against a fake server. | The real Claude API. |
 
 ## Build from source
 
@@ -71,7 +81,9 @@ npm run dev:web    # the same UI in a browser
 | `npm run test:e2e` | Runs the real desktop app. Add `-- --anywhere` on Windows to test Check Anywhere against test windows of its own. |
 | `npm run dist` | Builds the installer for this computer into `release/` |
 | `npm run build:site` | Builds the web app and the Office add-in into `dist-site/` |
+| `npm run test:addin` | Runs the built add-in in Chrome against a fake Office |
 | `npm run build:extension` | Builds the browser extension into `dist-extension/` |
+| `npm run test:extension` | Builds the extension and runs it in Chromium against local test pages |
 | `npm run icons` | Redraws the app icons |
 
 ## How it is organized
