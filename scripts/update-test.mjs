@@ -36,9 +36,14 @@ const installed = join(work, 'installed');
 const app = join(installed, 'Wordsmith.exe');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Null while the installer is swapping the files. */
 function installedVersion() {
-  const packageFile = asar.extractFile(join(installed, 'resources', 'app.asar'), 'package.json');
-  return JSON.parse(packageFile.toString()).version;
+  try {
+    const packageFile = asar.extractFile(join(installed, 'resources', 'app.asar'), 'package.json');
+    return JSON.parse(packageFile.toString()).version;
+  } catch {
+    return null;
+  }
 }
 
 function buildInstaller(version) {

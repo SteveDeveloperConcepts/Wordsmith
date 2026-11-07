@@ -112,6 +112,16 @@ const answerOpenDialog = (app, filePaths) =>
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: paths });
   }, filePaths);
 
+/** How many documents the sidebar lists. On a small screen it is folded away, so it has to be opened to look. */
+async function documentCount(page) {
+  const folded = (await page.locator('.library').count()) === 0;
+  if (folded) await page.click('[aria-label="Toggle the documents sidebar"]');
+  await page.waitForSelector('.doc');
+  const count = await page.locator('.doc').count();
+  if (folded) await page.click('.scrim', { position: { x: 600, y: 300 } });
+  return count;
+}
+
 async function waitForFile(path, timeout = 15_000) {
   const deadline = Date.now() + timeout;
   while (!existsSync(path)) {
@@ -180,15 +190,14 @@ await test('exports write real files', async () => {
 
 await test('a Word document imports as a new document', async () => {
   await answerOpenDialog(app, [join(work, 'out.docx')]);
-  const before = await page.locator('.doc').count();
+  const before = await documentCount(page);
   await chooseMenu(app, 'Import…');
   await page
-    .waitForFunction((count) => document.querySelectorAll('.doc').length === count + 1, before, { timeout: 15_000 })
+    .waitForFunction(() => document.querySelector('.title-input')?.value === 'out', null, { timeout: 15_000 })
     .catch(async () => {
       throw new Error(`no new document. The app said: ${await page.locator('.toast').allTextContents()}`);
     });
-  const title = await page.inputValue('.title-input');
-  check(title === 'out', `the title is ${title}`);
+  check((await documentCount(page)) === before + 1, 'the document is not in the list');
   check((await page.textContent('.ws-prose')).includes('proofread'), 'the text did not arrive');
 });
 
@@ -270,17 +279,20 @@ await test('checking for updates gives an answer', async () => {
 });
 
 await test('window size and documents survive a restart', async () => {
-  const size = { width: 1240, height: 700 };
-  await app.evaluate(({ BrowserWindow }, wanted) => {
+  // Smaller than the screen, whatever the screen is, and not the size the window started at.
+  const size = await app.evaluate(({ BrowserWindow, screen }) => {
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const wanted = { width: Math.min(1240, width - 60), height: Math.min(700, height - 60) };
     const main = BrowserWindow.getAllWindows().find((window) => window.isVisible());
     main.setSize(wanted.width, wanted.height);
-  }, size);
+    return wanted;
+  });
   await sleep(300);
   await page.locator('.ws-prose').click();
   await page.keyboard.press('Control+End');
   await page.keyboard.type(' A sentence typed before restarting.');
   await sleep(1200);
-  const documents = await page.locator('.doc').count();
+  const documents = await documentCount(page);
 
   await page.evaluate(() => window.wordsmith.setAnywhere({ enabled: false }));
   await app.close();
@@ -292,7 +304,7 @@ await test('window size and documents survive a restart', async () => {
     return main.getSize();
   });
   check(seen[0] === size.width && seen[1] === size.height, `the window came back at ${seen}`);
-  check((await page.locator('.doc').count()) === documents, 'documents were lost');
+  check((await documentCount(page)) === documents, 'documents were lost');
   check((await page.textContent('.ws-prose')).includes('typed before restarting'), 'the new text was lost');
 });
 
@@ -307,12 +319,12 @@ await test('the page cannot navigate away or open windows', async () => {
   check(app.windows().length === windows, 'a window opened');
 });
 
-await test('closing the window quits when nothing needs the app running', async () => {
+// On a Mac an app stays open with no windows, as Mac apps do.
+await test(process.platform === 'darwin' ? 'quitting ends the process' : 'closing the window quits when nothing needs the app running', async () => {
   const closed = new Promise((resolve) => app.process().once('exit', () => resolve(true)));
-  await app.evaluate(({ BrowserWindow }) => {
-    BrowserWindow.getAllWindows()
-      .find((window) => window.isVisible())
-      .close();
+  await app.evaluate(({ BrowserWindow, app: electronApp }) => {
+    if (process.platform === 'darwin') electronApp.quit();
+    else BrowserWindow.getAllWindows().find((window) => window.isVisible()).close();
   });
   const quit = await Promise.race([closed, sleep(8000).then(() => false)]);
   check(quit, 'the process is still running');
@@ -410,7 +422,7 @@ app.whenReady().then(() => {
   };
 
   await launchQuick();
-  const documentsBefore = await page.locator('.doc').count();
+  const documentsBefore = await documentCount(page);
 
   await test('Check Anywhere: plain text in another app is corrected in place', async () => {
     const out = join(work, 'plain.out');
@@ -469,7 +481,7 @@ app.whenReady().then(() => {
   await test('Check Anywhere: what it checks stays out of the document library', async () => {
     await page.reload();
     await ready(app);
-    const stored = await page.locator('.doc').count();
+    const stored = await documentCount(page);
     check(stored === documentsBefore, `the library went from ${documentsBefore} to ${stored} documents`);
   });
 
