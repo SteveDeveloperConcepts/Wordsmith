@@ -13,6 +13,7 @@ import {
 } from '@engine/types';
 import { AI_MODELS } from '@shared/ai-types';
 import type { ThemeChoice } from '@shared/api';
+import { updateMessage } from '../commands';
 import { plural } from '../lib/format';
 import { desktop } from '../platform';
 import { useSession } from '../state/session';
@@ -550,6 +551,30 @@ function AiSection() {
 
 /* ---------- About ---------- */
 
+function UpdateCheckRow() {
+  const [message, setMessage] = useState('');
+  const [checking, setChecking] = useState(false);
+
+  const check = async () => {
+    setChecking(true);
+    setMessage('');
+    const result = await desktop?.checkForUpdates();
+    setChecking(false);
+    if (result) setMessage(updateMessage(result));
+  };
+
+  return (
+    <div className="settings-actions">
+      <button type="button" className="btn btn--outline" disabled={checking} onClick={() => void check()}>
+        {checking ? 'Checking…' : 'Check for updates'}
+      </button>
+      <p className="settings-note" role="status">
+        {message}
+      </p>
+    </div>
+  );
+}
+
 function AboutSection() {
   const [version, setVersion] = useState(desktop ? '' : 'Web version');
 
@@ -568,6 +593,7 @@ function AboutSection() {
       <p className="settings-version">
         <strong>Wordsmith</strong> {version}
       </p>
+      {desktop && <UpdateCheckRow />}
 
       <Group title="Privacy">
         <div className="settings-prose">

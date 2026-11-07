@@ -1,11 +1,9 @@
 name: Publish the web app and Office add-in
 
-# GitHub Pages must be turned on once, in the repository's settings:
+# Run by hand for now. GitHub Pages must be turned on once first, in the repository's settings:
 # Settings > Pages > Build and deployment > Source > GitHub Actions.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

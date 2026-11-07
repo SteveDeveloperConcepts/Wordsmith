@@ -1,4 +1,4 @@
-appId: com.stevedeveloperconcepts.wordsmith
+appId: com.developerconcepts.wordsmith
 productName: Wordsmith
 copyright: Copyright © 2026 Steve Vaubell
 
@@ -24,6 +24,13 @@ extraResources:
 # koffi ships prebuilt binaries, so there is nothing to compile.
 npmRebuild: false
 
+# Where installed copies look for new versions (src/main/updater.ts). Builds upload nothing themselves:
+# the Release workflow attaches the latest*.yml and .blockmap files written next to the installers.
+publish:
+  provider: github
+  owner: SteveDeveloperConcepts
+  repo: Wordsmith
+
 win:
   target:
     - target: nsis
@@ -36,18 +43,20 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  artifactName: Wordsmith-Setup-${version}-${arch}.${ext}
+  # No spaces in release file names: GitHub renames uploads that have them.
+  artifactName: Wordsmith-Setup-${version}.${ext}
 
 mac:
   category: public.app-category.productivity
   icon: resources/icon.icns
-  # Each architecture is built on a machine of that architecture, because npm installs
-  # only the matching koffi binary.
+  # The disk image is what people download. Updates install from the zip.
   target:
-    - target: dmg
-  # Without a Developer ID, sign ad hoc: Apple Silicon refuses to run unsigned code at all.
-  identity: "-"
-  hardenedRuntime: false
+    - dmg
+    - zip
+  artifactName: Wordsmith-${version}-${arch}.${ext}
+  # Signed with a Developer ID and notarised by the Release workflow (docs/RELEASING.md).
+  # electron-builder notarises when APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, and APPLE_TEAM_ID are set.
+  hardenedRuntime: true
   # Word and text editors keep their place as the default app; Wordsmith only appears in Open With.
   fileAssociations:
     - ext: docx
@@ -62,6 +71,3 @@ mac:
       name: Text document
       role: Editor
       rank: Alternate
-
-dmg:
-  artifactName: Wordsmith-${version}-${arch}.${ext}

@@ -26,12 +26,10 @@ With an API key, you can also rewrite a selection, write new text from a prompt,
 
 ## Install
 
-Download the installer from [Releases](https://github.com/SteveDeveloperConcepts/Wordsmith/releases), or from the latest [CI run](https://github.com/SteveDeveloperConcepts/Wordsmith/actions/workflows/ci.yml) while no release exists yet.
+Download the installer from [Releases](https://github.com/SteveDeveloperConcepts/Wordsmith/releases). After that, Wordsmith keeps itself up to date: new versions download in the background and install when you restart it.
 
-The builds are not yet signed, so each system warns you the first time:
-
-- **Windows:** SmartScreen shows "Windows protected your PC". Choose **More info**, then **Run anyway**.
-- **macOS:** Open the app once. When macOS refuses, go to **System Settings > Privacy & Security**, scroll down, and choose **Open Anyway**. On first use of Check Anywhere, macOS also asks you to allow Wordsmith under **Accessibility**, because it copies and pastes in other apps on your behalf. Until the builds are signed, macOS treats each update as a new app, so you may need to turn this on again after updating.
+- **Windows:** the installer has no publisher certificate yet, so SmartScreen shows "Windows protected your PC" the first time. Choose **More info**, then **Run anyway**.
+- **macOS:** drag Wordsmith into Applications and open it. The first time you use Check Anywhere, macOS asks you to allow Wordsmith under **Accessibility**, because it copies and pastes in other apps on your behalf.
 
 Then add the pieces you want:
 
@@ -57,7 +55,8 @@ Then add the pieces you want:
 
 | Part | Tested | Not tested yet |
 | --- | --- | --- |
-| Desktop app | End to end on Windows, built and packaged. Builds and unit tests on Apple Silicon and Intel Macs. | The installers themselves have not been installed and run. |
+| Desktop app | End to end, packaged, on Windows and on Apple Silicon and Intel Macs. | Signed and notarised Mac builds, until the first release. |
+| Updates | On Windows, a real install, update, and restart on every push. | Updates on a Mac, until there are two signed releases. |
 | Check Anywhere | On Windows, against test windows in separate processes, with plain and formatted text. On Macs, its system calls load and answer. | Real Word and Outlook. The copy and paste flow on a Mac. |
 | Office add-in | In real Chrome against a fake Office. Both manifests pass Microsoft's validator. | Real Office, on any platform. |
 | Browser extension | In real Chromium against local copies of Outlook and Gmail's compose areas. | Real Outlook on the web and Gmail. Edge. |
@@ -85,6 +84,7 @@ npm run dev:web    # the same UI in a browser
 | `npm run build:extension` | Builds the browser extension into `dist-extension/` |
 | `npm run test:extension` | Builds the extension and runs it in Chromium against local test pages |
 | `npm run icons` | Redraws the app icons |
+| `npm run release` | Publishes a new version. See [Releasing Wordsmith](docs/RELEASING.md). |
 
 ## How it is organized
 

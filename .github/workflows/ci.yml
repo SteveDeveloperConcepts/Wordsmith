@@ -32,10 +32,30 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+      # As in the Release workflow: npm installs only this machine's koffi, and one build makes both apps.
+      - name: Add the Intel build of koffi
+        if: matrix.name == 'macos-arm64'
+        run: npm install --no-save --force --ignore-scripts "@koromix/koffi-darwin-x64@$(node -p "require('./node_modules/koffi/package.json').version")"
+
       - name: Build the installer
-        run: npm run dist
+        shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          case "${{ matrix.name }}" in
+            windows-x64) npm run dist:win ;;
+            macos-arm64) npm run dist:mac -- --x64 --arm64 ;;
+            macos-x64) npm run dist:mac -- --x64 ;;
+          esac
+
+      - name: Check the update files were written
+        shell: bash
+        run: ls release/latest*.yml
+
+      - name: Test the packaged app
+        run: npm run test:e2e -- --packaged
+
       - uses: actions/upload-artifact@v7
         with:
           name: wordsmith-${{ matrix.name }}
@@ -43,6 +63,18 @@ jobs:
             release/*.exe
             release/*.dmg
           if-no-files-found: error
+
+  update:
+    name: windows self-update
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:update
 
   web:
     runs-on: ubuntu-latest

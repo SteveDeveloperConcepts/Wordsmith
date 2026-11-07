@@ -1,21 +1,25 @@
+# Push a version tag (for example v0.2.0) to build the Windows and Mac installers and publish them as a
+# GitHub release. `npm run release` does that for you. See docs/RELEASING.md.
 name: Release
-
-# Pushing a tag such as v0.1.0 builds every installer and attaches them to a draft
-# GitHub release, ready to review and publish by hand.
 
 on:
   push:
     tags: ['v*']
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
+    name: Build (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, macos-15-intel]
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: macOS
+            os: macos-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -24,18 +28,78 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      - name: Check the tag matches package.json
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match version $version in package.json"
+            exit 1
+          fi
+
+      - run: npm run typecheck
       - run: npm test
-      - run: npm run dist
+
+      - name: Build the Windows installer
+        if: runner.os == 'Windows'
+        run: npm run dist:win
+
+      # npm installs only this machine's koffi binary, and one build makes both Mac apps.
+      - name: Add the Intel build of koffi
+        if: runner.os == 'macOS'
+        run: npm install --no-save --force --ignore-scripts "@koromix/koffi-darwin-x64@$(node -p "require('./node_modules/koffi/package.json').version")"
+
+      # A build without the certificate could never update itself, so it must not be released.
+      - name: Build, sign, and notarise the Mac apps
+        if: runner.os == 'macOS'
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-      - uses: softprops/action-gh-release@v3
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::A repository secret for $name is missing. See 'One-time setup' in docs/RELEASING.md."
+              exit 1
+            fi
+          done
+          npx electron-vite build
+          npx electron-builder --mac --x64 --arm64 --publish never
+
+      - name: Check the Mac apps are signed, notarised, and complete
+        if: runner.os == 'macOS'
+        run: |
+          for dir in mac:x64 mac-arm64:arm64; do
+            app="release/${dir%%:*}/Wordsmith.app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose=2 "$app"
+            xcrun stapler validate "$app"
+            ls "$app/Contents/Resources/app.asar.unpacked/node_modules/@koromix/koffi-darwin-${dir##*:}/"
+          done
+
+      # Installed copies read latest.yml (Windows) or latest-mac.yml to find a new version, and they
+      # use the .blockmap files to download only what changed. Without these, nobody gets this
+      # release as an update.
+      - name: Check the update files were written
+        shell: bash
+        run: ls release/latest*.yml
+
+      - uses: actions/upload-artifact@v7
         with:
-          draft: true
-          files: |
+          name: installers-${{ matrix.name }}
+          path: |
             release/*.exe
             release/*.dmg
+            release/*.zip
+            release/*.blockmap
+            release/latest*.yml
+          if-no-files-found: error
 
   extension:
+    name: Build (browser extension)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -46,7 +110,40 @@ jobs:
       - run: npm ci
       - run: npm run build:extension
       - run: cd dist-extension && zip -r ../wordsmith-browser-extension.zip .
-      - uses: softprops/action-gh-release@v3
+      - uses: actions/upload-artifact@v7
         with:
-          draft: true
-          files: wordsmith-browser-extension.zip
+          name: installers-extension
+          path: wordsmith-browser-extension.zip
+          if-no-files-found: error
+
+  release:
+    needs: [build, extension]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: installers
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          tag="refs/tags/$GITHUB_REF_NAME"
+          notes="$RUNNER_TEMP/notes.md"
+          : > "$notes"
+          # An annotated tag's message, after its first line, becomes "What's new". actions/checkout
+          # swaps an annotated tag for a plain one, so fetch the real tag to read its message.
+          git fetch --quiet --force origin "$tag:$tag"
+          if [ "$(git cat-file -t "$tag")" = tag ]; then
+            whats_new=$(git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME")
+            if [ -n "$(printf '%s' "$whats_new" | tr -d '[:space:]')" ]; then
+              printf "## What's new\n\n%s\n\n" "$whats_new" > "$notes"
+            fi
+          fi
+          sed "s/<version>/$version/g" .github/release-notes.md >> "$notes"
+          gh release create "$GITHUB_REF_NAME" installers/* --verify-tag \
+            --title "Wordsmith $version" --notes-file "$notes" --generate-notes

@@ -2,7 +2,7 @@
  * Everything the menus, the toolbar, and the operating system can ask the app to
  * do, in one place, so that each route behaves the same.
  */
-import type { MenuAction, PickedFile } from '@shared/api';
+import type { MenuAction, PickedFile, UpdateCheck } from '@shared/api';
 import { copyFormatted, exportDocument, printDocument, type ExportKind } from './lib/exporters';
 import { plural } from './lib/format';
 import { openInWord, startEmail } from './lib/handoff';
@@ -87,6 +87,27 @@ function showTab(tab: AssistantTab): void {
   useSession.getState().setTab(tab);
 }
 
+const UPDATE_MESSAGE: Record<UpdateCheck['status'], (version?: string) => string> = {
+  latest: () => 'You have the latest version of Wordsmith.',
+  downloading: (version) => `Downloading version ${version}. You will be told when it is ready.`,
+  ready: (version) => `Version ${version} is ready. Restart Wordsmith to install it.`,
+  failed: () => 'Could not check for updates. Check your internet connection and try again.',
+  unavailable: () => 'This copy of Wordsmith does not update itself.',
+};
+
+export const updateMessage = (check: UpdateCheck) =>
+  UPDATE_MESSAGE[check.status]('version' in check ? check.version : undefined);
+
+async function checkForUpdates(): Promise<void> {
+  if (desktop) notify(updateMessage(await desktop.checkForUpdates()));
+}
+
+/** Last edits first, because the app is about to quit. */
+async function installUpdate(): Promise<void> {
+  await useLibrary.getState().flush();
+  await desktop?.installUpdate();
+}
+
 async function newDocument(): Promise<void> {
   await useLibrary.getState().create();
   useSession.getState().editor?.commands.focus();
@@ -154,6 +175,12 @@ export function runCommand(action: MenuAction): void {
       break;
     case 'copy-document':
       void copyDocument();
+      break;
+    case 'check-updates':
+      void checkForUpdates();
+      break;
+    case 'install-update':
+      void installUpdate();
       break;
     case 'undo':
       session.editor?.chain().focus().undo().run();

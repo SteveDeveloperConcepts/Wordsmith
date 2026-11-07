@@ -31,6 +31,8 @@ export function buildMenu(handlers: MenuHandlers): Menu {
     },
   ];
 
+  const checkForUpdates: MenuItemConstructorOptions = { label: 'Check for Updates…', click: action('check-updates') };
+
   const settings: MenuItemConstructorOptions = {
     label: 'Settings…',
     accelerator: 'CmdOrCtrl+,',
@@ -44,6 +46,7 @@ export function buildMenu(handlers: MenuHandlers): Menu {
             label: app.name,
             submenu: [
               { role: 'about' },
+              checkForUpdates,
               { type: 'separator' },
               settings,
               { type: 'separator' },
@@ -144,7 +147,7 @@ export function buildMenu(handlers: MenuHandlers): Menu {
       submenu: [
         { label: 'Wordsmith on GitHub', click: () => void shell.openExternal(REPOSITORY) },
         { label: 'Report an Issue', click: () => void shell.openExternal(`${REPOSITORY}/issues`) },
-        ...(mac ? [] : ([{ type: 'separator' }, { role: 'about' }] as MenuItemConstructorOptions[])),
+        ...(mac ? [] : ([{ type: 'separator' }, checkForUpdates, { role: 'about' }] as MenuItemConstructorOptions[])),
       ],
     },
   ];

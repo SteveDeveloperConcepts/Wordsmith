@@ -79,6 +79,15 @@ export interface SaveResult {
   path?: string;
 }
 
+/** A new version has downloaded and is waiting to install. */
+export interface UpdateState {
+  version: string;
+}
+
+export type UpdateCheck =
+  | { status: 'latest' | 'failed' | 'unavailable' }
+  | { status: 'downloading' | 'ready'; version: string };
+
 export type MenuAction =
   | 'new-document'
   | 'import'
@@ -98,6 +107,8 @@ export type MenuAction =
   | 'show-insights'
   | 'show-ai'
   | 'copy-document'
+  | 'check-updates'
+  | 'install-update'
   | 'undo'
   | 'redo';
 
@@ -127,6 +138,12 @@ export interface DesktopBridge {
   openExternal(url: string): Promise<void>;
   setTheme(theme: ThemeChoice): Promise<void>;
 
+  /** The version waiting to install, if any. */
+  updateState(): Promise<UpdateState | null>;
+  checkForUpdates(): Promise<UpdateCheck>;
+  /** Quit and install the version that is ready. */
+  installUpdate(): Promise<void>;
+
   anywhereStatus(): Promise<AnywhereStatus>;
   setAnywhere(patch: Partial<AnywhereSettings>): Promise<AnywhereStatus>;
   /** macOS: ask for the Accessibility permission. Resolves true if it is already granted. */
@@ -151,6 +168,7 @@ export interface DesktopBridge {
 
   onAiEvent(listener: (event: AiEvent) => void): () => void;
   onMenu(listener: (action: MenuAction) => void): () => void;
+  onUpdate(listener: (state: UpdateState) => void): () => void;
   /** Text from the quick window, to open as a new document. */
   onOpenText(listener: (text: string) => void): () => void;
   /** New text for the quick window to check. */
@@ -176,6 +194,10 @@ export const IPC = {
   writeClipboard: 'clipboard:write',
   openExternal: 'app:open-external',
   setTheme: 'app:set-theme',
+  updateState: 'update:state',
+  updateCheck: 'update:check',
+  updateInstall: 'update:install',
+  updateChanged: 'update:changed',
   anywhereStatus: 'anywhere:status',
   setAnywhere: 'anywhere:set',
   requestAppControl: 'anywhere:request-app-control',

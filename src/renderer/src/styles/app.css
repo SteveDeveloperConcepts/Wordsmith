@@ -426,6 +426,31 @@ p {
   }
 }
 
+/* ---------- Update banner ---------- */
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.update-banner__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.update-banner__text span {
+  color: var(--text-2);
+}
+
 /* ---------- Dropdown menu ---------- */
 
 .menu-anchor {

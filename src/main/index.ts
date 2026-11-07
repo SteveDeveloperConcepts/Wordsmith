@@ -39,6 +39,7 @@ import * as ai from './ai';
 import { CheckAnywhere } from './anywhere';
 import { buildMenu } from './menu';
 import * as store from './store';
+import { setupUpdater, type Updater } from './updater';
 
 const SCHEME = 'app';
 const HOST = 'wordsmith';
@@ -86,6 +87,8 @@ const MIME: Record<string, string> = {
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let rendererReady = false;
+let quitting = false;
+let updater: Updater | null = null;
 /** Deliveries that arrived before the UI was listening. */
 const pending: Array<() => void> = [];
 
@@ -210,7 +213,7 @@ function createWindow(): BrowserWindow {
 
 /** With the shortcut in use the app stays in the tray, so that the shortcut keeps working. */
 function afterMainWindowClosed(): void {
-  if (process.platform === 'darwin') return;
+  if (quitting || process.platform === 'darwin') return;
   if (!tray || !anywhere.keepsRunning) {
     app.quit();
     return;
@@ -280,8 +283,15 @@ const anywhere = new CheckAnywhere({
   secure: secureWindow,
 });
 
+/** The page saves any last edits and then asks for the install. With no page open, there is nothing to save. */
+function installUpdate(): void {
+  if (mainWindow && rendererReady) deliver(IPC.menu, 'install-update');
+  else updater?.install();
+}
+
 function refreshMenus(): void {
   const checkAnywhere = () => void anywhere.trigger();
+  const update = updater?.state();
   Menu.setApplicationMenu(
     buildMenu({
       send: (action: MenuAction) => {
@@ -302,6 +312,13 @@ function refreshMenus(): void {
         click: checkAnywhere,
       },
       { type: 'separator' },
+      // The app can run in the tray for days, where the banner in its window would never be seen.
+      ...(update
+        ? ([
+            { label: `Restart to Install Version ${update.version}`, click: installUpdate },
+            { type: 'separator' },
+          ] as Electron.MenuItemConstructorOptions[])
+        : []),
       { label: 'Quit Wordsmith', click: () => app.quit() },
     ]),
   );
@@ -434,6 +451,10 @@ function registerIpc(): void {
     anywhere.themeChanged();
   });
 
+  handle(IPC.updateState, () => updater?.state() ?? null);
+  handle(IPC.updateCheck, () => updater?.check() ?? { status: 'unavailable' as const });
+  handle(IPC.updateInstall, () => updater?.install());
+
   handle(IPC.anywhereStatus, () => anywhere.status());
   handle(IPC.setAnywhere, (_event, patch: Partial<AnywhereSettings>) => anywhere.update(cleanAnywherePatch(patch)));
   handle(IPC.requestAppControl, () => anywhere.requestAppControl());
@@ -486,6 +507,17 @@ if (!app.requestSingleInstanceLock()) {
     void anywhere.start();
     if (!process.argv.includes(HIDDEN_FLAG)) mainWindow = createWindow();
     void openPaths(pathsFromArgv(process.argv));
+    updater = setupUpdater({
+      changed(state) {
+        mainWindow?.webContents.send(IPC.updateChanged, state);
+        refreshMenus();
+      },
+      beforeInstall() {
+        // On a Mac the system closes every window first, and the quick window would otherwise refuse.
+        quitting = true;
+        anywhere.prepareToQuit();
+      },
+    });
     // Once the main window has had the first turn, get the quick window ready too.
     setTimeout(() => anywhere.prepare(), QUICK_WINDOW_DELAY);
 
@@ -498,7 +530,10 @@ if (!app.requestSingleInstanceLock()) {
   // but alive, would otherwise keep this event from ever firing anyway.
   app.on('window-all-closed', () => undefined);
 
-  app.on('before-quit', () => anywhere.prepareToQuit());
+  app.on('before-quit', () => {
+    quitting = true;
+    anywhere.prepareToQuit();
+  });
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();

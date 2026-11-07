@@ -1,0 +1,9 @@
+# Mac builds made without the Developer ID certificate, for CI and for trying a build on your
+# own Mac: `npm run dist:mac`. Apple silicon Macs will not open an app with no signature at all, so
+# it gets an ad-hoc one. The hardened runtime would make that build fail library validation at launch.
+# The Release workflow never uses this: a release has to be signed, or it could not update itself.
+extends: electron-builder.yml
+mac:
+  identity: "-"
+  hardenedRuntime: false
+  notarize: false

@@ -238,6 +238,23 @@ await test('removing the key works, and no key says so', async () => {
   check(code === 'no-key', `the error was ${code}`);
 });
 
+await test('a downloaded update is offered, and can wait', async () => {
+  await app.evaluate(({ BrowserWindow }) => {
+    const main = BrowserWindow.getAllWindows().find((window) => window.isVisible());
+    main.webContents.send('update:changed', { version: '9.9.9' });
+  });
+  await page.waitForSelector('.update-banner', { timeout: 5000 });
+  check((await page.textContent('.update-banner')).includes('9.9.9'), 'the banner does not name the version');
+  await page.click('.update-banner button:has-text("Later")');
+  check((await page.locator('.update-banner').count()) === 0, 'Later did not hide the banner');
+});
+
+await test('checking for updates gives an answer', async () => {
+  const { status } = await page.evaluate(() => window.wordsmith.checkForUpdates());
+  const expected = PACKAGED ? ['latest', 'failed', 'downloading', 'ready'] : ['unavailable'];
+  check(expected.includes(status), `the check said ${status}`);
+});
+
 await test('window size and documents survive a restart', async () => {
   const size = { width: 1240, height: 700 };
   await app.evaluate(({ BrowserWindow }, wanted) => {

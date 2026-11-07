@@ -3,7 +3,15 @@
  * It exposes a small, explicit API; the page never sees `ipcRenderer` itself.
  */
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
-import { IPC, type AiEvent, type DesktopBridge, type MenuAction, type PickedFile, type QuickCapture } from '@shared/api';
+import {
+  IPC,
+  type AiEvent,
+  type DesktopBridge,
+  type MenuAction,
+  type PickedFile,
+  type QuickCapture,
+  type UpdateState,
+} from '@shared/api';
 
 function subscribe<T>(channel: string) {
   return (listener: (payload: T) => void) => {
@@ -29,6 +37,10 @@ const bridge: DesktopBridge = {
   openExternal: (url) => ipcRenderer.invoke(IPC.openExternal, url),
   setTheme: (theme) => ipcRenderer.invoke(IPC.setTheme, theme),
 
+  updateState: () => ipcRenderer.invoke(IPC.updateState),
+  checkForUpdates: () => ipcRenderer.invoke(IPC.updateCheck),
+  installUpdate: () => ipcRenderer.invoke(IPC.updateInstall),
+
   anywhereStatus: () => ipcRenderer.invoke(IPC.anywhereStatus),
   setAnywhere: (patch) => ipcRenderer.invoke(IPC.setAnywhere, patch),
   requestAppControl: () => ipcRenderer.invoke(IPC.requestAppControl),
@@ -48,6 +60,7 @@ const bridge: DesktopBridge = {
 
   onAiEvent: subscribe<AiEvent>(IPC.aiEvent),
   onMenu: subscribe<MenuAction>(IPC.menu),
+  onUpdate: subscribe<UpdateState>(IPC.updateChanged),
   onOpenText: subscribe<string>(IPC.openText),
   onQuickCapture: subscribe<QuickCapture>(IPC.quickCapture),
   onOpenFiles: subscribe<PickedFile[]>(IPC.openFiles),

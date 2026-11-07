@@ -19,6 +19,7 @@ import { useLibrary } from './state/library';
 import { useSession } from './state/session';
 import { useSettings } from './state/settings';
 import { TopbarActions } from './TopbarActions';
+import { UpdateBanner } from './UpdateBanner';
 
 /** Below this width the sidebar floats over the workspace instead of squeezing the page. */
 const SIDEBAR_OVERLAY_QUERY = '(max-width: 1120px)';
@@ -219,6 +220,7 @@ export function App() {
         </>
       )}
       <main className="workspace">
+        <UpdateBanner />
         <header className="topbar">
           <div className="topbar__group">
             <button
