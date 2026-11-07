@@ -40,6 +40,8 @@ const bridge: DesktopBridge = {
   updateState: () => ipcRenderer.invoke(IPC.updateState),
   checkForUpdates: () => ipcRenderer.invoke(IPC.updateCheck),
   installUpdate: () => ipcRenderer.invoke(IPC.updateInstall),
+  mustMoveToUpdate: () => ipcRenderer.invoke(IPC.updateMustMove),
+  moveToApplications: () => ipcRenderer.invoke(IPC.updateMove),
 
   anywhereStatus: () => ipcRenderer.invoke(IPC.anywhereStatus),
   setAnywhere: (patch) => ipcRenderer.invoke(IPC.setAnywhere, patch),

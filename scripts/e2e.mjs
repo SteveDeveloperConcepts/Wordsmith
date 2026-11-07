@@ -272,6 +272,20 @@ await test('a downloaded update is offered, and can wait', async () => {
   check((await page.locator('.update-banner').count()) === 0, 'Later did not hide the banner');
 });
 
+await test(
+  process.platform === 'darwin' && PACKAGED
+    ? 'outside Applications, the app offers to move itself'
+    : 'the app does not ask to be moved',
+  async () => {
+    // A packaged test build runs from its build folder, where a Mac copy could not update itself.
+    const offered = await page
+      .waitForSelector('.move-banner', { timeout: 3000 })
+      .then(() => true)
+      .catch(() => false);
+    check(offered === (process.platform === 'darwin' && PACKAGED), `the move banner ${offered ? 'showed' : 'did not show'}`);
+  },
+);
+
 await test('checking for updates gives an answer', async () => {
   const { status } = await page.evaluate(() => window.wordsmith.checkForUpdates());
   const expected = PACKAGED ? ['latest', 'failed', 'downloading', 'ready'] : ['unavailable'];

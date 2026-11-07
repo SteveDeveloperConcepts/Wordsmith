@@ -428,7 +428,8 @@ p {
 
 /* ---------- Update banner ---------- */
 
-.update-banner {
+.update-banner,
+.move-banner {
   display: flex;
   align-items: center;
   gap: 8px;

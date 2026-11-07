@@ -39,7 +39,7 @@ import * as ai from './ai';
 import { CheckAnywhere } from './anywhere';
 import { buildMenu } from './menu';
 import * as store from './store';
-import { setupUpdater, type Updater } from './updater';
+import { mustMoveToUpdate, setupUpdater, type Updater } from './updater';
 
 const SCHEME = 'app';
 const HOST = 'wordsmith';
@@ -454,6 +454,16 @@ function registerIpc(): void {
   handle(IPC.updateState, () => updater?.state() ?? null);
   handle(IPC.updateCheck, () => updater?.check() ?? { status: 'unavailable' as const });
   handle(IPC.updateInstall, () => updater?.install());
+  handle(IPC.updateMustMove, () => mustMoveToUpdate());
+  handle(IPC.updateMove, () => {
+    if (!mustMoveToUpdate()) return;
+    try {
+      // Moves the app, then quits and starts the moved copy.
+      app.moveToApplicationsFolder();
+    } catch (err) {
+      console.error('Could not move Wordsmith to Applications:', err);
+    }
+  });
 
   handle(IPC.anywhereStatus, () => anywhere.status());
   handle(IPC.setAnywhere, (_event, patch: Partial<AnywhereSettings>) => anywhere.update(cleanAnywherePatch(patch)));

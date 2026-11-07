@@ -143,6 +143,10 @@ export interface DesktopBridge {
   checkForUpdates(): Promise<UpdateCheck>;
   /** Quit and install the version that is ready. */
   installUpdate(): Promise<void>;
+  /** macOS: the app runs from somewhere it cannot replace itself, such as the disk image. */
+  mustMoveToUpdate(): Promise<boolean>;
+  /** macOS: move the app to Applications and start it from there. */
+  moveToApplications(): Promise<void>;
 
   anywhereStatus(): Promise<AnywhereStatus>;
   setAnywhere(patch: Partial<AnywhereSettings>): Promise<AnywhereStatus>;
@@ -198,6 +202,8 @@ export const IPC = {
   updateCheck: 'update:check',
   updateInstall: 'update:install',
   updateChanged: 'update:changed',
+  updateMustMove: 'update:must-move',
+  updateMove: 'update:move',
   anywhereStatus: 'anywhere:status',
   setAnywhere: 'anywhere:set',
   requestAppControl: 'anywhere:request-app-control',

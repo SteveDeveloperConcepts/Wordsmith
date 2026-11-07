@@ -19,6 +19,13 @@ export interface UpdaterHost {
   beforeInstall(): void;
 }
 
+/**
+ * macOS cannot replace an app running from the disk image, or from a quarantined copy that
+ * the system runs from a hidden location. Updates would download and never install.
+ */
+export const mustMoveToUpdate = () =>
+  process.platform === 'darwin' && app.isPackaged && !app.isInApplicationsFolder();
+
 export interface Updater {
   /** The version waiting to install, if any. */
   state(): UpdateState | null;
