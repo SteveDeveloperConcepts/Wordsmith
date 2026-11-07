@@ -27,6 +27,19 @@ const work = mkdtempSync(join(tmpdir(), 'wordsmith-e2e-'));
 const profile = join(work, 'profile');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** In GitHub Actions, make a failure show on the run's summary, where it can be read without signing in. */
+function annotate(title, message) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  const text = String(message).slice(0, 1500).replace(/%/g, '%25').replace(/\r/g, '').replace(/\n/g, '%0A');
+  console.log(`::error title=${title.replace(/[:,]/g, ' ')}::${text}`);
+}
+
+process.on('uncaughtException', (err) => {
+  annotate('The end-to-end test stopped', err.stack ?? err);
+  console.error(err);
+  process.exit(1);
+});
+
 const results = [];
 async function test(name, run) {
   try {
@@ -36,6 +49,7 @@ async function test(name, run) {
   } catch (err) {
     results.push({ name, ok: false });
     console.log(`  FAIL  ${name}\n        ${err.message?.split('\n').join('\n        ')}`);
+    annotate(name, err.message);
   }
 }
 

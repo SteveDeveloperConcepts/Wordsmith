@@ -18,6 +18,13 @@ if (process.platform !== 'win32' || !process.env.CI) {
   process.exit(1);
 }
 
+// In GitHub Actions, a failure shows on the run's summary, where it can be read without signing in.
+process.on('uncaughtException', (err) => {
+  const text = String(err.stack ?? err).slice(0, 1500).replace(/%/g, '%25').replace(/\r/g, '').replace(/\n/g, '%0A');
+  console.log(`::error title=The update test failed::${text}`);
+  process.exit(1);
+});
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OLD = '0.0.1';
 const NEW = '0.0.2';
