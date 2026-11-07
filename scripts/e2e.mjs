@@ -324,13 +324,26 @@ await test('window size and documents survive a restart', async () => {
 
 await test('the page cannot navigate away or open windows', async () => {
   const windows = app.windows().length;
+  // The app hands outside links to the default browser. Catch that here, or every run of this
+  // test would open the address in the real browser of whoever runs it.
+  await app.evaluate(({ shell }) => {
+    globalThis.openedExternally = [];
+    shell.openExternal = async (url) => {
+      globalThis.openedExternally.push(url);
+    };
+  });
   await page.evaluate(() => {
-    window.open('https://example.com/');
-    location.href = 'https://example.com/';
+    window.open('https://wordsmith.invalid/opened');
+    location.href = 'https://wordsmith.invalid/navigated';
   });
   await sleep(800);
   check(page.url().startsWith('app://wordsmith/'), `navigated to ${page.url()}`);
   check(app.windows().length === windows, 'a window opened');
+  const opened = await app.evaluate(() => globalThis.openedExternally);
+  check(
+    opened.includes('https://wordsmith.invalid/opened') && opened.includes('https://wordsmith.invalid/navigated'),
+    `the links did not go to the browser: ${JSON.stringify(opened)}`,
+  );
 });
 
 // On a Mac an app stays open with no windows, as Mac apps do.
