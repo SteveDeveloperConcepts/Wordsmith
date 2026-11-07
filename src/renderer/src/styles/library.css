@@ -35,18 +35,6 @@
   flex: none;
 }
 
-.library__mark-tile {
-  fill: var(--primary);
-}
-
-.library__mark-letter {
-  fill: none;
-  stroke: var(--on-primary);
-  stroke-width: 2.3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .library__search {
   position: relative;
   flex: none;

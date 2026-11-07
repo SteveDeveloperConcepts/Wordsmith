@@ -63,8 +63,19 @@ function useOutsidePointer(inside: Array<RefObject<HTMLElement | null>>, onOutsi
 function Mark() {
   return (
     <svg className="library__mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-      <rect className="library__mark-tile" width="24" height="24" rx="6" />
-      <path className="library__mark-letter" d="M5.5 7.5 8.7 17 12 9.6 15.3 17l3.2-9.5" />
+      <defs>
+        <linearGradient id="library-mark-heat" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff7d6" />
+          <stop offset="0.34" stopColor="#ffbe48" />
+          <stop offset="0.7" stopColor="#fa701e" />
+          <stop offset="1" stopColor="#ce2c12" />
+        </linearGradient>
+      </defs>
+      <rect width="24" height="24" rx="6" fill="#23252c" />
+      <path
+        fill="url(#library-mark-heat)"
+        d="M2.6 6h3.9l1.9 7.8L10.3 6h3.4l1.9 7.8L17.5 6h3.9l-4 12.6h-3.5L12 11.4l-1.9 7.2H6.6z"
+      />
     </svg>
   );
 }

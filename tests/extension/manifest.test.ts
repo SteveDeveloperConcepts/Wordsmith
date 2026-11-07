@@ -1,7 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { inflateSync } from 'node:zlib';
 import { CATEGORIES } from '@engine/types';
-import { renderIcon } from '../../src/extension/build/icons';
 import { HIGHLIGHT_CSS, highlightName, SENTENCE_HIGHLIGHT, UNDERLINE_COLORS } from '../../src/extension/content/styles';
 import { buildManifest, ICON_SIZES } from '../../src/extension/manifest';
 import { DEFAULT_SITE_MATCHES, isWebmailHost, sitePattern, unsupportedSurface } from '../../src/extension/shared/sites';
@@ -103,7 +103,9 @@ describe('underline colors', () => {
 });
 
 describe('icons', () => {
-  /** Width, height, and RGBA rows of a PNG the renderer made. */
+  const iconFile = (size: number) => readFileSync(new URL(`../../src/extension/assets/icon-${size}.png`, import.meta.url));
+
+  /** Width, height, and RGBA rows of a PNG the icon script made. */
   function decode(png: Buffer) {
     const size = png.readUInt32BE(16);
     const start = png.indexOf('IDAT') + 4;
@@ -115,20 +117,20 @@ describe('icons', () => {
     return { size, pixel };
   }
 
-  it.each(ICON_SIZES)('renders a %i pixel PNG', (size) => {
-    const png = renderIcon(size);
+  it.each(ICON_SIZES)('has a %i pixel PNG', (size) => {
+    const png = iconFile(size);
     expect(png.subarray(1, 4).toString()).toBe('PNG');
     expect(decode(png).size).toBe(size);
   });
 
-  it('is a white W on a dark green rounded square', () => {
-    const { pixel } = decode(renderIcon(128));
+  it('is a glowing W on a dark rounded tile', () => {
+    const { pixel } = decode(iconFile(128));
     expect(pixel(0, 0)[3]).toBe(0);
-    const [r, g, b, a] = pixel(64, 12);
-    expect(a).toBe(255);
-    expect(g).toBeGreaterThan(r);
-    expect(g).toBeGreaterThan(b);
-    expect(g).toBeLessThan(120);
-    expect(pixel(25, 36).slice(0, 3)).toEqual([255, 255, 255]);
+    const [tileRed, , , tileAlpha] = pixel(64, 14);
+    expect(tileAlpha).toBe(255);
+    expect(tileRed).toBeLessThan(110);
+    const [red, , blue] = pixel(30, 50);
+    expect(red).toBeGreaterThan(220);
+    expect(red).toBeGreaterThan(blue);
   });
 });

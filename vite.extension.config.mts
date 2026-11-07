@@ -5,7 +5,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { build, defineConfig, type Plugin } from 'vite';
-import { renderIcon } from './src/extension/build/icons';
 import { buildManifest, ICON_SIZES } from './src/extension/manifest';
 
 const dir = (path: string) => fileURLToPath(new URL(path, import.meta.url));
@@ -31,7 +30,11 @@ function extensionFiles(): Plugin {
         source: `${JSON.stringify(buildManifest(version), null, 2)}\n`,
       });
       for (const size of ICON_SIZES) {
-        this.emitFile({ type: 'asset', fileName: `icons/icon-${size}.png`, source: renderIcon(size) });
+        this.emitFile({
+          type: 'asset',
+          fileName: `icons/icon-${size}.png`,
+          source: readFileSync(dir(`./src/extension/assets/icon-${size}.png`)),
+        });
       }
     },
     async closeBundle() {
