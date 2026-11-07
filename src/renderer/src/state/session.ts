@@ -23,6 +23,8 @@ export interface SelectionStats {
 
 interface SessionState {
   editor: Editor | null;
+  /** Which document the editor holds. During a switch it can briefly differ from the open one. */
+  editorDoc: string | null;
   result: AnalysisResult | null;
   /** An analysis is scheduled or running. */
   checking: boolean;
@@ -37,7 +39,7 @@ interface SessionState {
   toast: Toast | null;
   selection: SelectionStats | null;
 
-  setEditor(editor: Editor | null): void;
+  setEditor(editor: Editor | null, docId?: string): void;
   setResult(result: AnalysisResult | null): void;
   setChecking(checking: boolean): void;
   setEngine(engine: EngineStatus): void;
@@ -54,6 +56,7 @@ let toastId = 0;
 
 export const useSession = create<SessionState>()((set) => ({
   editor: null,
+  editorDoc: null,
   result: null,
   checking: false,
   engine: { started: false, grammarEngineReady: false },
@@ -66,7 +69,7 @@ export const useSession = create<SessionState>()((set) => ({
   toast: null,
   selection: null,
 
-  setEditor: (editor) => set({ editor }),
+  setEditor: (editor, docId) => set({ editor, editorDoc: docId ?? null }),
   setResult: (result) =>
     set((s) => ({
       result,

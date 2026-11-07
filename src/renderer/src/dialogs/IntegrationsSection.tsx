@@ -75,7 +75,7 @@ function CheckAnywhereSettings() {
     const next = await desktop?.setAnywhere(patch);
     if (!next) return;
     setStatus(next);
-    if (next.enabled && !next.activeShortcut) {
+    if (next.shortcutRejected || (next.enabled && !next.activeShortcut)) {
       setProblem('Another app is already using that shortcut. Try a different one.');
     }
   };

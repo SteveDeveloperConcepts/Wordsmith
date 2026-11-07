@@ -6,12 +6,10 @@
  * which match it is, counted from the paragraph text. Everything here is plain
  * string work, so it can be tested without Word.
  */
+import { OBJECT } from '@shared/html-text';
 
 /** The longest search string Word accepts, counted after escaping. */
 export const MAX_QUERY = 255;
-
-/** Stands in for an object in the text, the same character readBlocks uses. */
-const OBJECT = '￼';
 
 /**
  * Footnote marks, pictures, and field markers sit in Word's text stream as single

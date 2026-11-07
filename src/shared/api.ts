@@ -30,6 +30,8 @@ export interface AnywhereStatus extends AnywhereSettings {
   supported: boolean;
   /** macOS only: the Accessibility permission has been granted. */
   canControlApps: boolean;
+  /** The shortcut just asked for could not be registered, so the old one was kept. */
+  shortcutRejected?: boolean;
 }
 
 export type QuickState =
@@ -121,7 +123,6 @@ export interface DesktopBridge {
    */
   openInDefaultApp(name: string, data: Uint8Array): Promise<string>;
 
-  readClipboard(): Promise<string>;
   writeClipboard(text: string): Promise<void>;
   openExternal(url: string): Promise<void>;
   setTheme(theme: ThemeChoice): Promise<void>;
@@ -172,7 +173,6 @@ export const IPC = {
   savePdf: 'files:save-pdf',
   openInDefaultApp: 'files:open-in-default-app',
   print: 'app:print',
-  readClipboard: 'clipboard:read',
   writeClipboard: 'clipboard:write',
   openExternal: 'app:open-external',
   setTheme: 'app:set-theme',

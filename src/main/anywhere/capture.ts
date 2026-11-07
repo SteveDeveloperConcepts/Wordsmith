@@ -36,8 +36,11 @@ const FOCUS_SETTLE = 80;
  */
 const PASTE_DELAY = 100;
 const PASTE_TRIES = 3;
-/** Apps read the clipboard after they see Ctrl+V, so it must stay put for a moment. */
-const PASTE_SETTLE = 450;
+/**
+ * Apps read the clipboard when they get to Ctrl+V, which takes a busy app a while.
+ * Restoring too soon would paste the writer's old clipboard, while waiting costs nothing.
+ */
+const PASTE_SETTLE = 1000;
 /** A failed paste leaves the selection in place, and copying it answers quickly. */
 const VERIFY_TIMEOUT = 250;
 const POLL_INTERVAL = 15;

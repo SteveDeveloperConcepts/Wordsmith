@@ -50,7 +50,10 @@ export class AnalysisController {
   private goals = useLibrary.getState().current?.goals;
   private dismissed = useLibrary.getState().current?.dismissed;
 
-  constructor(private readonly editor: Editor) {
+  constructor(
+    private readonly editor: Editor,
+    private readonly docId: string,
+  ) {
     editor.on('update', this.onUpdate);
     editor.on('selectionUpdate', this.onSelection);
     editor.on('blur', this.onBlur);
@@ -182,7 +185,7 @@ export class AnalysisController {
     if (this.editor.isDestroyed) return;
     const doc = this.editor.state.doc;
     const words = this.snapshot?.doc === doc ? this.snapshot.result.stats.words : countWords(doc.textBetween(0, doc.content.size, ' ', ' '));
-    useLibrary.getState().saveContent(this.editor.getJSON(), { preview: previewOf(doc), words });
+    useLibrary.getState().saveContent(this.docId, this.editor.getJSON(), { preview: previewOf(doc), words });
   }
 
   private readonly onUpdate = (): void => {

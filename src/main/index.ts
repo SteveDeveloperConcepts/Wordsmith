@@ -425,7 +425,6 @@ function registerIpc(): void {
     return shell.openPath(file);
   });
 
-  handle(IPC.readClipboard, () => clipboard.readText());
   handle(IPC.writeClipboard, (_event, text: string) => clipboard.writeText(String(text)));
   handle(IPC.openExternal, async (_event, url: string) => {
     if (isSafeExternal(url)) await shell.openExternal(url);
@@ -490,7 +489,9 @@ if (!app.requestSingleInstanceLock()) {
     // Once the main window has had the first turn, get the quick window ready too.
     setTimeout(() => anywhere.prepare(), QUICK_WINDOW_DELAY);
 
-    app.on('activate', () => void showWindow());
+    app.on('activate', (_event, hasVisibleWindows) => {
+      if (!hasVisibleWindows) showWindow();
+    });
   });
 
   // Closing the main window is handled where it closes. The quick window, hidden

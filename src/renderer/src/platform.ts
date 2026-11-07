@@ -62,11 +62,6 @@ export async function copyText(text: string): Promise<void> {
   await navigator.clipboard.writeText(text);
 }
 
-export async function readClipboardText(): Promise<string> {
-  if (desktop) return desktop.readClipboard();
-  return navigator.clipboard.readText();
-}
-
 export function openExternal(url: string): void {
   if (desktop) void desktop.openExternal(url);
   else window.open(url, '_blank', 'noopener,noreferrer');

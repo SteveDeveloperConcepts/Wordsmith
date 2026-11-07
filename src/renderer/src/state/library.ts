@@ -7,6 +7,7 @@ import { del, get, set } from 'idb-keyval';
 import { create } from 'zustand';
 import type { Goals } from '@engine/types';
 import { SAMPLE_PARAGRAPHS, SAMPLE_TITLE, paragraphsToDoc } from '../lib/sample';
+import { useSession } from './session';
 import { useSettings } from './settings';
 
 export interface DocMeta {
@@ -49,8 +50,8 @@ interface LibraryState {
   /** Hold a document in memory only. For this window's whole life, nothing reaches the library. */
   openScratch(input: NewDocument): void;
   rename(title: string): void;
-  /** Record the latest editor content; written to disk shortly after. */
-  saveContent(content: JSONContent, summary: { preview: string; words: number }): void;
+  /** Record an editor's latest content for its document; written to disk shortly after. */
+  saveContent(id: string, content: JSONContent, summary: { preview: string; words: number }): void;
   /** Update what the list shows about the open document, without it counting as an edit. */
   setSummary(summary: Pick<DocMeta, 'issues' | 'score' | 'preview' | 'words'>): void;
   setGoals(goals: Goals): void;
@@ -129,17 +130,42 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 /** The quick window shares this storage with the main window, and must leave it alone. */
 let scratch = false;
 
+/**
+ * What the open document says this instant. The draft trails the editor by a moment,
+ * so the editor is asked first, as long as it is really showing this document.
+ */
+function liveContent(current: DocRecord): JSONContent {
+  const { editor, editorDoc } = useSession.getState();
+  if (editor && !editor.isDestroyed && editorDoc === current.id) return editor.getJSON();
+  return draft ?? current.content;
+}
+
 export const useLibrary = create<LibraryState>()((setState, getState) => {
   const persistCurrent = async () => {
     const { current, docs } = getState();
     if (!current || scratch) return;
     const meta = docs.find((d) => d.id === current.id);
+    // Kept as the draft too: once the editor is gone, a later save must not fall back to older text.
+    draft = liveContent(current);
     const record: DocRecord = {
       ...current,
-      content: draft ?? current.content,
+      content: draft,
       updatedAt: meta?.updatedAt ?? current.updatedAt,
     };
     await store(docKey(record.id), record);
+    await store(INDEX_KEY, docs);
+  };
+
+  /** An editor can have its last word after its document was switched away from. */
+  const saveClosed = async (id: string, content: JSONContent, summary: Pick<DocMeta, 'preview' | 'words'>) => {
+    if (scratch) return;
+    const record = await load<DocRecord>(docKey(id));
+    // Deleted in the meantime, and this must not bring it back.
+    if (!record || !getState().docs.some((d) => d.id === id)) return;
+    await store(docKey(id), { ...record, content });
+    // The edit came before the switch, so it does not move the document up the list.
+    const docs = getState().docs.map((d) => (d.id === id ? { ...d, ...summary } : d));
+    setState({ docs });
     await store(INDEX_KEY, docs);
   };
 
@@ -239,10 +265,13 @@ export const useLibrary = create<LibraryState>()((setState, getState) => {
       patchCurrent({ title }, { title });
     },
 
-    saveContent(content, summary) {
-      draft = content;
+    saveContent(id, content, summary) {
       const { current, docs } = getState();
-      if (!current) return;
+      if (current?.id !== id) {
+        void saveClosed(id, content, summary);
+        return;
+      }
+      draft = content;
       const updatedAt = Date.now();
       // Only the list entry changes here; `current` keeps its identity so nothing else re-renders.
       setState({ docs: sortDocs(docs.map((d) => (d.id === current.id ? { ...d, ...summary, updatedAt } : d))) });
@@ -323,5 +352,6 @@ export const useLibrary = create<LibraryState>()((setState, getState) => {
 
 /** The open document's latest content, including edits not yet written to disk. */
 export function currentContent(): JSONContent | null {
-  return draft ?? useLibrary.getState().current?.content ?? null;
+  const { current } = useLibrary.getState();
+  return current && liveContent(current);
 }

@@ -25,7 +25,6 @@ const bridge: DesktopBridge = {
   openInDefaultApp: (name, data) => ipcRenderer.invoke(IPC.openInDefaultApp, name, data),
   print: () => ipcRenderer.invoke(IPC.print),
 
-  readClipboard: () => ipcRenderer.invoke(IPC.readClipboard),
   writeClipboard: (text) => ipcRenderer.invoke(IPC.writeClipboard, text),
   openExternal: (url) => ipcRenderer.invoke(IPC.openExternal, url),
   setTheme: (theme) => ipcRenderer.invoke(IPC.setTheme, theme),

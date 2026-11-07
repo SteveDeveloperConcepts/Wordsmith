@@ -238,15 +238,6 @@ await test('removing the key works, and no key says so', async () => {
   check(code === 'no-key', `the error was ${code}`);
 });
 
-await test('the quick window keeps out of the document library', async () => {
-  const before = await page.locator('.doc').count();
-  const quick = app.windows().find((window) => window.url().includes('view=quick'));
-  if (quick) {
-    await quick.evaluate(() => localStorage.getItem('wordsmith.lastDocument'));
-  }
-  check((await page.locator('.doc').count()) === before, 'the library changed');
-});
-
 await test('window size and documents survive a restart', async () => {
   const size = { width: 1240, height: 700 };
   await app.evaluate(({ BrowserWindow }, wanted) => {
@@ -383,11 +374,12 @@ app.whenReady().then(() => {
       }
       await sleep(100);
     }
-    // The clipboard goes back a moment after the paste.
-    await sleep(800);
+    // The clipboard goes back a little over a second after the paste.
+    await sleep(1800);
   };
 
   await launchQuick();
+  const documentsBefore = await page.locator('.doc').count();
 
   await test('Check Anywhere: plain text in another app is corrected in place', async () => {
     const out = join(work, 'plain.out');
@@ -441,6 +433,13 @@ app.whenReady().then(() => {
       await sleep(400);
       target.kill();
     }
+  });
+
+  await test('Check Anywhere: what it checks stays out of the document library', async () => {
+    await page.reload();
+    await ready(app);
+    const stored = await page.locator('.doc').count();
+    check(stored === documentsBefore, `the library went from ${documentsBefore} to ${stored} documents`);
   });
 
   await test('Check Anywhere: the app stays in the tray after its window closes', async () => {

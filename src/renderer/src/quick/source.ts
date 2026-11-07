@@ -7,7 +7,7 @@
  * even though the writer only saw plain paragraphs.
  */
 import type { JSONContent } from '@tiptap/core';
-import { applyEdits, diffText, readBlocks } from '@shared/html-text';
+import { OBJECT, applyEdits, diffText, readBlocks } from '@shared/html-text';
 import type { QuickResult } from '@shared/api';
 
 export interface QuickDocument {
@@ -21,9 +21,8 @@ interface Source {
   html: string | null;
 }
 
-/** Inline objects read as this in a block, and as a space in the editor, which keeps offsets equal. */
-const OBJECT = /￼/g;
-const showable = (text: string) => text.replace(OBJECT, ' ');
+/** An inline object shows as a space in the editor, which keeps offsets equal. */
+const showable = (text: string) => text.replaceAll(OBJECT, ' ');
 
 const lineEnding = (text: string) => (text.includes('\r\n') ? '\r\n' : '\n');
 const endsWithNewline = (text: string) => /[\r\n]$/.test(text);

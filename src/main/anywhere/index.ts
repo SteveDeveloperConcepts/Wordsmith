@@ -92,14 +92,22 @@ export class CheckAnywhere {
   }
 
   update(patch: Partial<AnywhereSettings>): AnywhereStatus {
-    const next = { ...this.settings(), ...patch };
+    const previous = this.settings();
+    const next = { ...previous, ...patch };
     store.set('anywhere', next);
     if (patch.launchAtLogin !== undefined) {
       app.setLoginItemSettings({ openAtLogin: patch.launchAtLogin, args: ['--hidden'] });
     }
     this.applyShortcut();
     if (next.enabled) this.ensureWindow();
-    return this.status();
+
+    // Another app holds it. The attempt must not cost the writer the shortcut that worked.
+    const rejected = next.enabled && !this.registered && next.shortcut !== previous.shortcut;
+    if (rejected) {
+      store.set('anywhere', { ...next, shortcut: previous.shortcut });
+      this.applyShortcut();
+    }
+    return { ...this.status(), shortcutRejected: rejected };
   }
 
   /** On macOS, pressing keys in another app needs a permission only the writer can grant. */

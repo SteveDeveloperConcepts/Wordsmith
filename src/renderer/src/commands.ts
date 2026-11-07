@@ -8,7 +8,7 @@ import { plural } from './lib/format';
 import { openInWord, startEmail } from './lib/handoff';
 import { importFile } from './lib/importers';
 import { textToDoc } from './lib/sample';
-import { desktop, isDesktop, pickFiles } from './platform';
+import { desktop, pickFiles } from './platform';
 import { currentContent, useLibrary } from './state/library';
 import { useSession, type AssistantTab } from './state/session';
 import { useSettings } from './state/settings';
@@ -175,7 +175,7 @@ function browserShortcut(event: KeyboardEvent): MenuAction | null {
 
 /** Start taking commands from the shell or the keyboard. Returns a function that stops. */
 export function listenForCommands(): () => void {
-  if (!desktop || !isDesktop) {
+  if (!desktop) {
     const onKey = (event: KeyboardEvent) => {
       const action = browserShortcut(event);
       if (!action) return;

@@ -65,6 +65,8 @@ export class Session {
     clearTimeout(this.timer);
     this.checkPending = false;
     this.ticket++;
+    // A check still under way is abandoned here, so it cannot count as done.
+    this.lastChecked = null;
     this.field.suspend();
   }
 

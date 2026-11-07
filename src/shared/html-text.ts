@@ -41,7 +41,7 @@ export interface ReadOptions {
 }
 
 /** Stands in for an inline object such as an image, so offsets stay honest. */
-const OBJECT = '￼';
+export const OBJECT = '￼';
 
 const BLOCK_TAGS = new Set([
   'address', 'article', 'aside', 'blockquote', 'body', 'caption', 'center', 'dd', 'details', 'dir', 'div', 'dl',

@@ -32,6 +32,10 @@ describe('acceleratorFor', () => {
     expect(acceleratorFor(press(' ', 'Space', { altKey: true }))).toBe('Alt+Space');
   });
 
+  it('names the plus key, which would otherwise look like a separator', () => {
+    expect(acceleratorFor(press('+', 'Equal', { ctrlKey: true, shiftKey: true }))).toBe('Control+Shift+Plus');
+  });
+
   it('reads the letter from the key position, since Option changes the character on a Mac', () => {
     expect(acceleratorFor(press('∑', 'KeyW', { altKey: true }))).toBe('Alt+W');
   });

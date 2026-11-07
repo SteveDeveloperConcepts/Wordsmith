@@ -53,18 +53,19 @@ export function EditorPane({ doc, onEditor, compact = false }: Props) {
     },
   });
 
+  const docId = doc.id;
   useEffect(() => {
     if (!editor) return;
     onEditor(editor);
-    useSession.getState().setEditor(editor);
-    const controller = new AnalysisController(editor);
+    useSession.getState().setEditor(editor, docId);
+    const controller = new AnalysisController(editor, docId);
     return () => {
       controller.dispose();
       useSession.getState().setEditor(null);
       useSession.getState().setResult(null);
       onEditor(null);
     };
-  }, [editor, onEditor]);
+  }, [editor, onEditor, docId]);
 
   const clearTimer = () => {
     if (timer.current) clearTimeout(timer.current);

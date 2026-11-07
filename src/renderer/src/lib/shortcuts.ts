@@ -24,6 +24,7 @@ export function shortcutLabel(accelerator: string, mac = isMac): string {
 
 const KEY_NAMES: Record<string, string> = {
   ' ': 'Space',
+  '+': 'Plus',
   ArrowUp: 'Up',
   ArrowDown: 'Down',
   ArrowLeft: 'Left',

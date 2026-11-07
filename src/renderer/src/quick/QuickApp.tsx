@@ -248,7 +248,8 @@ export function QuickApp() {
   const dismissToast = useSession((s) => s.dismissToast);
 
   useEffect(() => {
-    analysisClient.start();
+    // The engine starts with the first check, not here: this window is built at every
+    // launch, and the engine takes about 200 MB that many sessions would never use.
     useSession.getState().setEngine(analysisClient.status);
     const stopStatus = analysisClient.onStatus((status) => useSession.getState().setEngine(status));
     const stopCaptures = desktop?.onQuickCapture((next) => {
