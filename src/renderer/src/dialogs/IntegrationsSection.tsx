@@ -5,8 +5,8 @@ import { acceleratorFor, shortcutLabel } from '../lib/shortcuts';
 import { desktop, isMac } from '../platform';
 import { Group, OutLink, Setting, Switch } from './settingsParts';
 
-const ADD_IN_GUIDE = 'https://github.com/SteveDeveloperConcepts/Wordsmith/blob/initial-build/src/addin/INSTALL.md';
-const EXTENSION_GUIDE = 'https://github.com/SteveDeveloperConcepts/Wordsmith/blob/initial-build/src/extension/README.md';
+const ADD_IN_GUIDE = 'https://github.com/SteveDeveloperConcepts/Wordsmith/blob/main/src/addin/INSTALL.md';
+const EXTENSION_GUIDE = 'https://github.com/SteveDeveloperConcepts/Wordsmith/blob/main/src/extension/README.md';
 
 interface RecorderProps {
   value: string;
