@@ -44,10 +44,20 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: |
           case "${{ matrix.name }}" in
-            windows-x64) npm run dist:win ;;
-            macos-arm64) npm run dist:mac -- --x64 --arm64 ;;
-            macos-x64) npm run dist:mac -- --x64 ;;
+            windows-x64) build="npm run dist:win" ;;
+            macos-arm64) build="npm run dist:mac -- --x64 --arm64" ;;
+            macos-x64) build="npm run dist:mac -- --x64" ;;
           esac
+          # A failure also goes on the run's summary, which can be read without signing in.
+          set +e
+          $build 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            message=$(grep -v '^[[:space:]]*$' build.log | tail -n 25 | tr -d '\r' | sed 's/%/%25/g' | awk 'BEGIN { ORS = "%0A" } { print }')
+            echo "::error title=The installer build failed::$message"
+            exit "$status"
+          fi
 
       - name: Check the update files were written
         shell: bash

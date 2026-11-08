@@ -46,7 +46,7 @@ Then add the pieces you want:
 
 ## What it cannot do
 
-- **No live underlines inside desktop Word or Outlook.** Use the add-in panel, or Check Anywhere.
+- **Live underlines inside desktop Word and Outlook are an experiment,** on Windows only and off by default. Turn on **Underline as you type** in Settings, under Integrations. It works in classic Outlook, not new Outlook, and makes Outlook work harder while you type. See [the spike](docs/LIVE-OVERLAY-SPIKE.md). Otherwise use the add-in panel, or Check Anywhere.
 - **Google Docs and Word for the web draw their own text,** so the extension cannot underline in them. In Word for the web, use the add-in.
 - **In Outlook, a fix replaces the draft's body,** because that is the only write Outlook allows. Formatting and images are kept, but you may not be able to undo it with `Ctrl+Z`. The panel says so where that applies.
 - **A few apps do not allow copying** or run with higher privileges than Wordsmith. Check Anywhere then offers the clipboard instead. In terminals it uses the clipboard only, because `Ctrl+C` there stops the running program.

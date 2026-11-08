@@ -16,7 +16,8 @@ const framework = join(process.env.WINDIR ?? 'C:\\Windows', 'Microsoft.NET', 'Fr
 const csc = join(framework, 'csc.exe');
 if (!existsSync(csc)) {
   console.error(`No C# compiler at ${csc}, so the live overlay helper was not built. The app runs without it.`);
-  process.exit(0);
+  // A build for release must include it, or "Underline as you type" would quietly be missing.
+  process.exit(process.env.CI ? 1 : 0);
 }
 
 if (existsSync(output) && statSync(output).mtimeMs >= statSync(source).mtimeMs) {
