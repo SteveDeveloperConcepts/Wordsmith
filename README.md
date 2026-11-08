@@ -6,6 +6,7 @@ Wordsmith works in its own editor, and it also works where you already write:
 
 | Where you write | How Wordsmith works there |
 | --- | --- |
+| Classic Outlook and Word on Windows | **Underline as you type.** Underlines appear over your message or document as you write, with any email account. An experiment, on by default. |
 | Any desktop app | **Check Anywhere.** Select text, press `Ctrl+Alt+W` (`⌃⌥W` on a Mac), fix it in a small floating window, and choose Replace. |
 | Word, PowerPoint, Excel | **Office add-in.** A panel beside your document, on Windows, Mac, and the web. |
 | Outlook with a Microsoft 365 or Outlook.com mailbox | **Office add-in.** A panel beside your draft, in classic, new, web, and Mac Outlook. It skips your signature and the quoted thread. |
@@ -46,7 +47,7 @@ Then add the pieces you want:
 
 ## What it cannot do
 
-- **Live underlines inside desktop Word and Outlook are an experiment,** on Windows only and off by default. Turn on **Underline as you type** in Settings, under Integrations. It works in classic Outlook, not new Outlook, and makes Outlook work harder while you type. See [the spike](docs/LIVE-OVERLAY-SPIKE.md). Otherwise use the add-in panel, or Check Anywhere.
+- **Live underlines inside desktop Word and Outlook are an experiment,** on Windows only and on by default. To turn it off, use **Underline as you type** in Settings, under Integrations. It works in classic Outlook, not new Outlook, and makes Outlook work harder while you type. See [the spike](docs/LIVE-OVERLAY-SPIKE.md). Otherwise use the add-in panel, or Check Anywhere.
 - **Google Docs and Word for the web draw their own text,** so the extension cannot underline in them. In Word for the web, use the add-in.
 - **In Outlook, a fix replaces the draft's body,** because that is the only write Outlook allows. Formatting and images are kept, but you may not be able to undo it with `Ctrl+Z`. The panel says so where that applies.
 - **A few apps do not allow copying** or run with higher privileges than Wordsmith. Check Anywhere then offers the clipboard instead. In terminals it uses the clipboard only, because `Ctrl+C` there stops the running program.

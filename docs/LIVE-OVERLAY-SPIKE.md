@@ -10,7 +10,7 @@ The cost is the open question. While the writer types, the prototype makes Outlo
 twice as hard as it does alone. Outlook announces every keystroke and scroll through accessibility
 events, so the full build can listen instead of asking, and should cost far less.
 
-The prototype is off by default and is not in any release.
+It shipped switched off in 0.2.0, and is on by default from the release after it.
 
 ## How it works
 
@@ -117,9 +117,9 @@ scaling side by side.
 
 ## Trying it
 
-Build from source on Windows and run `npm run dev`. In Settings, under Integrations, turn on
-**Underline as you type** in the **Outlook and Word on this PC (experimental)** group. Then bring
-classic Outlook or Word to the front.
+It is on by default on Windows: bring classic Outlook or Word to the front, with Wordsmith running.
+To turn it off, use **Underline as you type** in Settings, in the **Outlook and Word on this PC
+(experimental)** group. From source, run `npm run dev`.
 
 - Set `WORDSMITH_LIVE_DEBUG=1` before starting Wordsmith to log what the overlay reads, measures, and
   draws.

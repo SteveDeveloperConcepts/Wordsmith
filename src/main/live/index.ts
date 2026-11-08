@@ -1,6 +1,7 @@
 /**
  * The live overlay: underlines drawn over the message body in classic Outlook, or the page
- * in Word, as the writer types. Windows only, and off unless the writer turns it on.
+ * in Word, as the writer types. Windows only. It is on unless the writer turns it off, and its helper runs only once
+ * Outlook or Word has been in front.
  *
  * Wordsmith already looks at which window is in front for the Check Anywhere shortcut. While
  * that window belongs to Outlook or Word, this asks the accessibility helper
@@ -174,7 +175,8 @@ export class LiveOverlay {
   }
 
   settings(): LiveSettings {
-    return { enabled: false, ...store.get('live') };
+    // On unless the writer turned it off: anyone who switched it off keeps it off.
+    return { enabled: true, ...store.get('live') };
   }
 
   get supported(): boolean {
@@ -189,7 +191,8 @@ export class LiveOverlay {
     if (!this.supported || !this.settings().enabled || this.timer) return;
     this.native ??= await loadNative();
     if (!this.native) return;
-    this.helper.start();
+    // The helper starts the first time Outlook or Word comes to the front, so people who use
+    // neither never run it.
     this.schedule(IDLE_INTERVAL);
     debug('watching for Outlook and Word');
   }
@@ -242,19 +245,16 @@ export class LiveOverlay {
   private async look(): Promise<void> {
     const native = this.native;
     if (!native) return;
-    if (!this.helper.running) this.helper.start();
-    const where = await this.helper.ask<HelperReply & { hwnd?: number }>({ cmd: 'foreground' });
-    if (where.error || typeof where.hwnd !== 'number') {
+    // Asked in this process first, so that the helper is not asked anything, or even started,
+    // while neither app is in front. The overlay never takes focus, so it is never in front itself.
+    const front = native.frontmost();
+    if (!front?.name || !APPS.has(front.name) || native.isOwn(front)) {
       this.deactivate();
       return;
     }
-    // The pointer is on the card, which brought the overlay itself to the front: the field is still there.
-    if (this.session && where.hwnd === this.overlayHandle()) {
-      await this.follow(this.session);
-      return;
-    }
-    const front = native.frontmost();
-    if (!front?.name || !APPS.has(front.name) || native.isOwn(front)) {
+    if (!this.helper.running) this.helper.start();
+    const where = await this.helper.ask<HelperReply & { hwnd?: number }>({ cmd: 'foreground' });
+    if (where.error || typeof where.hwnd !== 'number') {
       this.deactivate();
       return;
     }
@@ -377,13 +377,6 @@ export class LiveOverlay {
     void window.loadURL(this.host.url);
     this.window = window;
     return window;
-  }
-
-  /** The overlay window's own handle, to tell it apart from the app it covers. */
-  private overlayHandle(): number | null {
-    if (!this.window || this.window.isDestroyed()) return null;
-    const handle = this.window.getNativeWindowHandle();
-    return handle.length >= 8 ? Number(handle.readBigUInt64LE(0)) : handle.readUInt32LE(0);
   }
 
   /** The overlay's page says it is listening. */
