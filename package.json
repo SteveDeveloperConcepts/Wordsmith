@@ -1,7 +1,7 @@
 {
   "name": "wordsmith",
   "productName": "Wordsmith",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A private, offline-first writing assistant for macOS and Windows: grammar, spelling, punctuation, sentence, clarity and tone checking with optional AI rewriting.",
   "author": "Steve Vaubell",
   "license": "MIT",
