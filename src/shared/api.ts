@@ -61,6 +61,61 @@ export interface QuickResult {
 
 export type QuickReplaceResult = { ok: true } | { ok: false; reason: 'window-gone' | 'selection-changed' | 'paste-failed' };
 
+/** The live overlay: underlines over the message body in classic Outlook, or the page in Word, as the writer types. */
+export interface LiveSettings {
+  enabled: boolean;
+}
+
+export interface LiveStatus extends LiveSettings {
+  /** Windows, with the accessibility helper present. */
+  supported: boolean;
+  /** An Outlook or Word field is under the overlay right now. */
+  active: boolean;
+}
+
+/** The text of the field under the overlay, as last read. */
+export interface LiveText {
+  /** Goes up with every reading, so a stale analysis can be told from a fresh one. */
+  generation: number;
+  /** Changes when the overlay moves to another message or document, so nothing carries over. */
+  field: number;
+  /** "Outlook" or "Word". */
+  app: string;
+  text: string;
+}
+
+/** A character range in that text. */
+export type LiveRange = [start: number, end: number];
+
+/** In the overlay window's own coordinates. */
+export interface LiveRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Where a range is drawn: one rectangle per line it spans, and the text it holds right now. */
+export interface LivePlacement {
+  rects: LiveRect[];
+  text: string;
+}
+
+/** Where a set of ranges are on screen. */
+export interface LiveMeasurement {
+  placements: LivePlacement[];
+  /** The text changed while it was being measured, so the placements may not match it. */
+  stale: boolean;
+}
+
+export interface LiveReplace {
+  start: number;
+  end: number;
+  /** The flagged text, checked against what is selected before anything is pasted. */
+  original: string;
+  text: string;
+}
+
 export interface PickedFile {
   name: string;
   data: Uint8Array;
@@ -163,6 +218,16 @@ export interface DesktopBridge {
   /** Open the text as a new document in the main window. */
   quickOpenInApp(text: string): Promise<void>;
 
+  liveStatus(): Promise<LiveStatus>;
+  setLive(patch: Partial<LiveSettings>): Promise<LiveStatus>;
+  /** The overlay window is listening for text. */
+  liveReady(): void;
+  /** `fingerprint` identifies the text the ranges belong to; text that has changed since is not measured. */
+  liveRects(ranges: LiveRange[], fingerprint: number): Promise<LiveMeasurement | null>;
+  liveReplace(request: LiveReplace): Promise<QuickReplaceResult>;
+  /** The pointer is over an underline or the card, so the overlay should take clicks. */
+  liveInteractive(on: boolean): Promise<void>;
+
   aiHasKey(): Promise<boolean>;
   /** Store the API key encrypted with the operating system's credential protection. */
   aiSetKey(key: string): Promise<void>;
@@ -177,6 +242,10 @@ export interface DesktopBridge {
   onOpenText(listener: (text: string) => void): () => void;
   /** New text for the quick window to check. */
   onQuickCapture(listener: (capture: QuickCapture) => void): () => void;
+  /** New text under the live overlay. */
+  onLiveText(listener: (update: LiveText) => void): () => void;
+  /** The field under the overlay was read again and is unchanged, but may have moved or scrolled. */
+  onLiveTick(listener: () => void): () => void;
   /** Files opened from the operating system (dropped on the app icon, "Open with"). */
   onOpenFiles(listener: (files: PickedFile[]) => void): () => void;
 }
@@ -214,6 +283,14 @@ export const IPC = {
   quickUseClipboard: 'quick:use-clipboard',
   quickClose: 'quick:close',
   quickOpenInApp: 'quick:open-in-app',
+  liveStatus: 'live:status',
+  setLive: 'live:set',
+  liveReady: 'live:ready',
+  liveText: 'live:text',
+  liveTick: 'live:tick',
+  liveRects: 'live:rects',
+  liveReplace: 'live:replace',
+  liveInteractive: 'live:interactive',
   aiHasKey: 'ai:has-key',
   aiSetKey: 'ai:set-key',
   aiClearKey: 'ai:clear-key',

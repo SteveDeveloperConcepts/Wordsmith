@@ -1,6 +1,6 @@
 import { CircleCheck, TriangleAlert } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { DEFAULT_ANYWHERE_SHORTCUT, type AnywhereSettings, type AnywhereStatus } from '@shared/api';
+import { DEFAULT_ANYWHERE_SHORTCUT, type AnywhereSettings, type AnywhereStatus, type LiveStatus } from '@shared/api';
 import { acceleratorFor, shortcutLabel } from '../lib/shortcuts';
 import { desktop, isMac } from '../platform';
 import { Group, OutLink, Setting, Switch } from './settingsParts';
@@ -137,6 +137,33 @@ function CheckAnywhereSettings() {
   );
 }
 
+/** Underlines as you type in classic Outlook and Word on Windows: an experiment, off by default. */
+function LiveSettings() {
+  const [status, setStatus] = useState<LiveStatus | null>(null);
+  useEffect(() => {
+    let current = true;
+    void desktop?.liveStatus().then((next) => {
+      if (current) setStatus(next);
+    });
+    return () => {
+      current = false;
+    };
+  }, []);
+  if (!desktop || !status?.supported) return null;
+  return (
+    <Group title="Outlook and Word on this PC (experimental)">
+      <div className="settings-rows">
+        <Switch
+          label="Underline as you type"
+          hint="Draws Wordsmith's underlines over the message you are writing in classic Outlook, or the page in Word. Rest the pointer on one for the fix."
+          checked={status.enabled}
+          onChange={(enabled) => void desktop?.setLive({ enabled }).then((next) => next && setStatus(next))}
+        />
+      </div>
+    </Group>
+  );
+}
+
 /** How Wordsmith reaches text outside its own window. */
 export function IntegrationsSection() {
   return (
@@ -144,6 +171,8 @@ export function IntegrationsSection() {
       <Group title="Check Anywhere">
         <CheckAnywhereSettings />
       </Group>
+
+      <LiveSettings />
 
       <Group title="Word, Outlook, PowerPoint, and Excel">
         <div className="settings-prose">

@@ -30,6 +30,9 @@ import {
   type AppInfo,
   type MenuAction,
   type PickedFile,
+  type LiveRange,
+  type LiveReplace,
+  type LiveSettings,
   type QuickResult,
   type SaveFileRequest,
   type SaveResult,
@@ -37,6 +40,7 @@ import {
 } from '@shared/api';
 import * as ai from './ai';
 import { CheckAnywhere } from './anywhere';
+import { LIVE_DEBUG, LiveOverlay } from './live';
 import { buildMenu } from './menu';
 import * as store from './store';
 import { mustMoveToUpdate, setupUpdater, type Updater } from './updater';
@@ -123,6 +127,7 @@ function registerAppProtocol(): void {
 
 const appUrl = () => DEV_URL ?? `${SCHEME}://${HOST}/index.html`;
 const quickUrl = () => `${appUrl()}?view=quick`;
+const liveUrl = () => `${appUrl()}?view=live${LIVE_DEBUG ? '&debug=1' : ''}`;
 
 /** Only our own page may call the IPC handlers. */
 function trusted(event: IpcMainInvokeEvent): boolean {
@@ -283,6 +288,15 @@ const anywhere = new CheckAnywhere({
   secure: secureWindow,
 });
 
+const live = new LiveOverlay({
+  get url() {
+    return liveUrl();
+  },
+  preload: PRELOAD,
+  helper: resourcePath('live-helper.exe'),
+  secure: secureWindow,
+});
+
 /** The page saves any last edits and then asks for the install. With no page open, there is nothing to save. */
 function installUpdate(): void {
   if (mainWindow && rendererReady) deliver(IPC.menu, 'install-update');
@@ -365,6 +379,20 @@ function cleanAnywherePatch(patch: Partial<AnywhereSettings>): Partial<AnywhereS
   if (typeof patch.enabled === 'boolean') clean.enabled = patch.enabled;
   if (typeof patch.launchAtLogin === 'boolean') clean.launchAtLogin = patch.launchAtLogin;
   if (typeof patch.shortcut === 'string' && patch.shortcut) clean.shortcut = patch.shortcut;
+  return clean;
+}
+
+/** Only pairs of whole numbers in order, so a bad page cannot hand the helper anything else. */
+function cleanRanges(ranges: unknown): LiveRange[] {
+  if (!Array.isArray(ranges)) return [];
+  const clean: LiveRange[] = [];
+  for (const range of ranges) {
+    if (!Array.isArray(range) || range.length !== 2) continue;
+    const [start, end] = range as unknown[];
+    if (Number.isInteger(start) && Number.isInteger(end) && (start as number) >= 0 && (end as number) >= (start as number)) {
+      clean.push([start as number, end as number]);
+    }
+  }
   return clean;
 }
 
@@ -476,6 +504,24 @@ function registerIpc(): void {
   handle(IPC.quickClose, () => anywhere.hide());
   handle(IPC.quickOpenInApp, (_event, text: string) => anywhere.openInApp(String(text)));
 
+  ipcMain.on(IPC.liveReady, (event) => live.pageIsReady(event.sender));
+  handle(IPC.liveStatus, () => live.status());
+  handle(IPC.setLive, (_event, patch: Partial<LiveSettings>) =>
+    live.update(typeof patch?.enabled === 'boolean' ? { enabled: patch.enabled } : {}),
+  );
+  handle(IPC.liveRects, (_event, ranges: LiveRange[], fingerprint: number) =>
+    live.rects(cleanRanges(ranges), Number(fingerprint) >>> 0),
+  );
+  handle(IPC.liveReplace, (_event, request: LiveReplace) =>
+    live.replace({
+      start: Number(request.start),
+      end: Number(request.end),
+      original: String(request.original),
+      text: String(request.text),
+    }),
+  );
+  handle(IPC.liveInteractive, (_event, on: boolean) => live.setInteractive(on === true));
+
   handle(IPC.aiHasKey, () => ai.hasKey());
   handle(IPC.aiSetKey, (_event, key: string) => ai.setKey(String(key)));
   handle(IPC.aiClearKey, () => ai.clearKey());
@@ -515,6 +561,7 @@ if (!app.requestSingleInstanceLock()) {
     createTray();
     refreshMenus();
     void anywhere.start();
+    void live.start();
     if (!process.argv.includes(HIDDEN_FLAG)) mainWindow = createWindow();
     void openPaths(pathsFromArgv(process.argv));
     updater = setupUpdater({
@@ -543,6 +590,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     quitting = true;
     anywhere.prepareToQuit();
+    live.prepareToQuit();
   });
 
   app.on('will-quit', () => {

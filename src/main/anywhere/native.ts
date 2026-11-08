@@ -61,8 +61,18 @@ export function friendlyAppName(path: string | null): string | null {
   return APP_NAMES[base.toLowerCase()] ?? base.charAt(0).toUpperCase() + base.slice(1);
 }
 
-/** Null where the platform is unsupported, or the system libraries could not be loaded. */
-export async function loadNative(): Promise<Native | null> {
+let loading: Promise<Native | null> | null = null;
+
+/**
+ * Null where the platform is unsupported, or the system libraries could not be loaded.
+ * Loaded once and shared: the Windows layer registers its structures by name, which can only happen once.
+ */
+export function loadNative(): Promise<Native | null> {
+  loading ??= load();
+  return loading;
+}
+
+async function load(): Promise<Native | null> {
   try {
     if (process.platform === 'win32') return (await import('./windows')).createWindowsNative();
     if (process.platform === 'darwin') return (await import('./mac')).createMacNative();

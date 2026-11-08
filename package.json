@@ -12,9 +12,9 @@
   },
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node scripts/build-live-helper.mjs && electron-vite dev",
     "dev:web": "vite --config vite.web.config.mts",
-    "build": "electron-vite build",
+    "build": "node scripts/build-live-helper.mjs && electron-vite build",
     "build:web": "vite build --config vite.web.config.mts",
     "build:addin": "vite build --config vite.addin.config.mts",
     "build:extension": "vite build --config vite.extension.config.mts --configLoader runner",
@@ -28,10 +28,10 @@
     "test:addin": "node tests/addin/pane.e2e.mjs",
     "test:extension": "node tests/extension/browser/run.mjs",
     "icons": "node scripts/make-icons.mjs",
-    "dist": "electron-vite build && electron-builder --publish never",
-    "dist:win": "electron-vite build && electron-builder --win --publish never",
-    "dist:mac": "electron-vite build && electron-builder --mac --publish never -c electron-builder.adhoc.yml",
-    "dist:dir": "electron-vite build && electron-builder --dir --publish never",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never -c electron-builder.adhoc.yml",
+    "dist:dir": "npm run build && electron-builder --dir --publish never",
     "release": "node scripts/release.mjs"
   },
   "devDependencies": {

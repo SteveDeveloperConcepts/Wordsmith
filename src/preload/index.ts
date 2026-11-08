@@ -7,6 +7,7 @@ import {
   IPC,
   type AiEvent,
   type DesktopBridge,
+  type LiveText,
   type MenuAction,
   type PickedFile,
   type QuickCapture,
@@ -54,6 +55,13 @@ const bridge: DesktopBridge = {
   quickClose: () => ipcRenderer.invoke(IPC.quickClose),
   quickOpenInApp: (text) => ipcRenderer.invoke(IPC.quickOpenInApp, text),
 
+  liveStatus: () => ipcRenderer.invoke(IPC.liveStatus),
+  setLive: (patch) => ipcRenderer.invoke(IPC.setLive, patch),
+  liveReady: () => ipcRenderer.send(IPC.liveReady),
+  liveRects: (ranges, fingerprint) => ipcRenderer.invoke(IPC.liveRects, ranges, fingerprint),
+  liveReplace: (request) => ipcRenderer.invoke(IPC.liveReplace, request),
+  liveInteractive: (on) => ipcRenderer.invoke(IPC.liveInteractive, on),
+
   aiHasKey: () => ipcRenderer.invoke(IPC.aiHasKey),
   aiSetKey: (key) => ipcRenderer.invoke(IPC.aiSetKey, key),
   aiClearKey: () => ipcRenderer.invoke(IPC.aiClearKey),
@@ -65,6 +73,8 @@ const bridge: DesktopBridge = {
   onUpdate: subscribe<UpdateState>(IPC.updateChanged),
   onOpenText: subscribe<string>(IPC.openText),
   onQuickCapture: subscribe<QuickCapture>(IPC.quickCapture),
+  onLiveText: subscribe<LiveText>(IPC.liveText),
+  onLiveTick: subscribe<void>(IPC.liveTick),
   onOpenFiles: subscribe<PickedFile[]>(IPC.openFiles),
 };
 

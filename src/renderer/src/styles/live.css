@@ -1,0 +1,134 @@
+/* The live overlay: a transparent window over Outlook's message body or Word's page. */
+
+html[data-view='live'],
+html[data-view='live'] body,
+html[data-view='live'] #root {
+  background: transparent !important;
+  overflow: hidden;
+}
+
+.live {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* One strip under each line a flagged word spans. The style differs per category, as in the extension. */
+.live-mark {
+  position: absolute;
+  height: 3px;
+  pointer-events: none;
+}
+
+.live-mark--correctness {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3' viewBox='0 0 6 3'%3E%3Cpath d='M0 1.5 Q1.5 0 3 1.5 T6 1.5' fill='none' stroke='%23df3f45' stroke-width='1.2'/%3E%3C/svg%3E")
+    repeat-x bottom;
+}
+
+.live-mark--clarity {
+  height: 0;
+  border-bottom: 1.5px solid var(--clarity);
+}
+
+.live-mark--engagement {
+  height: 0;
+  border-bottom: 1.5px dotted var(--engagement);
+}
+
+.live-mark--delivery {
+  height: 0;
+  border-bottom: 1.5px dashed var(--delivery);
+}
+
+/* The card, styled like the extension's but with the app's tokens, so it follows the theme. */
+.live-card {
+  position: absolute;
+  width: 300px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-2);
+  font: 13px/1.45 var(--font-ui);
+  pointer-events: auto;
+}
+
+.live-card--correctness { --c: var(--correctness); }
+.live-card--clarity { --c: var(--clarity); }
+.live-card--engagement { --c: var(--engagement); }
+.live-card--delivery { --c: var(--delivery); }
+
+.live-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.live-card__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.live-card__message {
+  margin: 6px 0 0;
+  color: var(--text-2);
+}
+
+.live-card__fixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* No weight of its own, so that the classes below win. */
+.live-card :where(button) {
+  font: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.live-card__fix {
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: var(--radius-s);
+  background: var(--c);
+  color: #ffffff;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.live-card__fix:hover {
+  filter: brightness(1.08);
+}
+
+.live-card__actions {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 0 -8px;
+}
+
+.live-card__action {
+  padding: 3px 8px;
+  border-radius: var(--radius-s);
+  color: var(--text-2);
+}
+
+.live-card__action:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.live-card__note {
+  margin: 8px 0 0;
+  color: var(--text-2);
+}

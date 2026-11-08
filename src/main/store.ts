@@ -5,7 +5,7 @@
 import { app } from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { AnywhereSettings } from '@shared/api';
+import type { AnywhereSettings, LiveSettings } from '@shared/api';
 
 export interface WindowState {
   x?: number;
@@ -20,6 +20,7 @@ interface Data {
   /** API key encrypted with safeStorage, base64-encoded. */
   aiKey?: string;
   anywhere?: AnywhereSettings;
+  live?: LiveSettings;
   /** The writer has been told the app keeps running in the tray. */
   trayExplained?: boolean;
   lastDirectory?: string;

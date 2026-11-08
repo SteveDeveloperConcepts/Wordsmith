@@ -20,6 +20,7 @@ extraResources:
     to: resources
     filter:
       - tray*.png
+      - live-helper.exe
 
 # koffi ships prebuilt binaries, so there is nothing to compile.
 npmRebuild: false
