@@ -57,9 +57,9 @@ Then add the pieces you want:
 | --- | --- | --- |
 | Desktop app | End to end, packaged, on Windows and on Apple Silicon and Intel Macs. | Signed and notarised Mac builds, until the first release. |
 | Updates | On Windows, a real install, update, and restart on every push. | Updates on a Mac, until there are two signed releases. |
-| Check Anywhere | On Windows, against test windows in separate processes, with plain and formatted text. On Macs, its system calls load and answer. | Real Word and Outlook. The copy and paste flow on a Mac. |
+| Check Anywhere | On Windows, against test windows in separate processes, with plain and formatted text, and the whole round trip in real classic Outlook and Word. On Macs, its system calls load and answer. | The copy and paste flow on a Mac. |
 | Office add-in | In real Chrome against a fake Office. Both manifests pass Microsoft's validator. | Real Office, on any platform. |
-| Browser extension | In real Chromium against local copies of Outlook and Gmail's compose areas. | Real Outlook on the web and Gmail. Edge. |
+| Browser extension | In real Chromium and in the installed Edge, against local copies of Outlook and Gmail's compose areas. | Real Outlook on the web and Gmail. |
 | AI features | Against a fake server. | The real Claude API. |
 
 ## Build from source
@@ -78,11 +78,12 @@ npm run dev:web    # the same UI in a browser
 | `npm run typecheck` | TypeScript |
 | `npm run build` | Builds the desktop app into `out/` |
 | `npm run test:e2e` | Runs the real desktop app. Add `-- --anywhere` on Windows to test Check Anywhere against test windows of its own. |
+| `scripts/anywhere-office-check.ps1` | With Wordsmith running on Windows, checks the Check Anywhere round trip in real Outlook (`-App Outlook`) or Word (`-App Word`): a throwaway draft or document, the shortcut, Fix, and Replace. Nothing is sent or saved. |
 | `npm run dist` | Builds the installer for this computer into `release/` |
 | `npm run build:site` | Builds the web app and the Office add-in into `dist-site/` |
 | `npm run test:addin` | Runs the built add-in in Chrome against a fake Office |
 | `npm run build:extension` | Builds the browser extension into `dist-extension/` |
-| `npm run test:extension` | Builds the extension and runs it in Chromium against local test pages |
+| `npm run test:extension` | Builds the extension and runs it in Chromium against local test pages. `WORDSMITH_BROWSER=msedge` runs it in Edge instead |
 | `npm run icons` | Redraws the app icons |
 | `npm run release` | Publishes a new version. See [Releasing Wordsmith](docs/RELEASING.md). |
 

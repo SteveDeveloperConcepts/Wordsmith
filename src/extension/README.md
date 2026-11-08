@@ -102,9 +102,9 @@ from reaching the network. No code here makes a network request in the first pla
   manifest.
 - `npm run test:extension` builds the extension and drives it in a real Chromium against the local pages in
   `tests/extension/pages`, which imitate the structure of Outlook and Gmail compose bodies. It needs Playwright's
-  Chromium, from `npx playwright-core install chromium`, because branded Chrome and Edge no longer side-load from the
-  command line. The local test host is added to a temporary copy of the build, never to the shipped manifest. It does
-  not visit real mail sites.
+  Chromium, from `npx playwright-core install chromium`, because branded Chrome no longer side-loads from the command
+  line. Edge still does: set `WORDSMITH_BROWSER=msedge` to run the same checks in the installed Edge. The local test
+  host is added to a temporary copy of the build, never to the shipped manifest. It does not visit real mail sites.
 
 ## Firefox and Safari
 

@@ -1,6 +1,7 @@
 // Drives the built extension in a real Chromium against local pages that imitate
-// webmail compose bodies. It never touches a real mail site. Branded Chrome and Edge
-// no longer side-load from the command line, so this uses Playwright's own Chromium.
+// webmail compose bodies. It never touches a real mail site. Branded Chrome no longer
+// side-loads from the command line, so this uses Playwright's own Chromium. Edge still does:
+// set WORDSMITH_BROWSER=msedge to run the same checks in the installed Edge.
 //
 //   node tests/extension/browser/run.mjs [only-this-scenario]
 //
@@ -791,7 +792,7 @@ writeFileSync(
 );
 
 const context = await chromium.launchPersistentContext(join(work, 'profile'), {
-  channel: 'chromium',
+  channel: process.env.WORDSMITH_BROWSER ?? 'chromium',
   headless: process.env.WORDSMITH_HEADED !== '1',
   viewport: { width: 1000, height: 700 },
   args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
